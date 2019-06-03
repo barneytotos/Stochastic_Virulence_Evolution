@@ -1,50 +1,16 @@
 #######
-## Expand the work in funs.R, which considers only parasite evolution (with host evolution as a true afterthought)
-## to include host evolution. Requires a switch to an SIR model or at the very least an SIS model with host death
-## as well as host reproduction
+## SIS model with host death as well as host reproduction. Host resistance and tolerance avialable as parameters, 
+## that can be set as constants or allowed to evolve (best not to let them evolve with the current state of the code
+## because they are currently unconstrained)
 #######
 
 #######
-## New Cautions and notes upon returning on Feb 1
+## Cautions 
 #######
 
-### First, search *** For new changes based on updated logic
-
-## (1) Unclear that the two step evolutionary process of first evo in alpha (while holding beta proportional to its
- ## max beta according to the tradeoff curve), followed by evo in beta is an appropriate method for modeling the evolution
-## (2) Unclear that treating birth as a probability is appropraite. This mostly arises at low pop sizes, where births are
- ## set to balance deaths. As virulence increases deaths get high, which forces the probability to 1, removing a piece of the
-  ## stochasticity. Maybe it is ok, but I definitely need to think about it. It may be more appropriate to actually model the
-   ## number of newborns per adult...
-## (3)
-
-
-#######
-## Cautions / General notes
-#######
-
-## Don't choose gamma as the mutational parameter right now, it won't work.
-## Don't give more than one host genotype as starting values, this hasn't been implemented yet.
-
-## Decided to just remove continuous time for now to shorten script. It can be recovered from github if continuous time is desired
-## Some debug notes:
-  ## — See stats:::simulate.lm. get(".Random.seed", envir = .GlobalEnv)
-  ## if (condition) browser()
-
-#######
-## Changes in progress and/or planned changes
-#######
-
-## 1 Host density dependent growth. For now assuming declining birth and constant death rate
-##    1.1 Need to set up in the preamble of the function what b0 and decay rate are depending on pop size so that birth and death balances at N0
-## 2 Parasites evolve in alpha and beta in a slightly funny way currently. Possibly update to:
-  ## theta1 = log(alpha)
-  ## theta2 = logit(beta / f(alpha)), where f is currently given by power_tradeoff()
-##    2.1 Can also consider reparameterizing so that f(alpha) is not a function of alpha
-##    2.2 Can also consider whether or not we want alpha and beta to evolve independently
-## 3 Work on quasi-equilibrium within host model: exploitation rate vs resistance - what load does this end up being?
-## 4 Convert to parasite exploitation and pathogenesis
-## 5 Add host evolution with simple costs
+## (1) Don't choose gamma as the mutational parameter right now, it won't work. Just beta.
+## (2) Don't give more than one host genotype as starting values, this hasn't been implemented yet.
+## (3) Stochastic vs Determinisitc should maybe be separated. Currently a bit long of a function and maybe slightly opaque
 
 ######
 ## Accessory Functions
@@ -1225,7 +1191,7 @@ if (prop_change == FALSE) {
 
 }
 
-#' Evolutionary simulations
+#' Evolutionary simulations (likely missing a few parameter values that have been incorporated recently)
 #' @useDynLib pevosim
 #' @importFrom Rcpp evalCpp
 #' @param N population size
