@@ -1,4 +1,4 @@
-# Stochastic_Virulence_Evolution
+# Stochastic Virulence Evolution
 Models for the stochastic evolution of parasite virulence
 
 This repository is an extension of Ben Bolker and Marta Wayne's work on "Nearly Neutral" virulence evolution (unpublished, private repository --- please email for access/more info) for one of the four data chapters in my thesis (as of June 2, 2019 the last minor revisions are being completed, the thesis will be searchable at https://macsphere.mcmaster.ca/ soon).
