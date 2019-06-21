@@ -4,17 +4,15 @@
 
 ## Script should be run in conjunction with stochastic_tidy.R
 
-## First grab the AD solutions
-grad_ascent_tot      <- readRDS("res_out/res_out_AD/AD_grad_ascent.Rds")
-grad_ascent_sing_tot <- readRDS("res_out/res_out_AD/AD_grad_ascent_sing.Rds")
+## First grab the AD solutions, some place you previously saved the file, or in the workspace...
+#grad_ascent_tot      <- readRDS("res_out/res_out_AD/AD_grad_ascent.Rds")
+#grad_ascent_sing_tot <- readRDS("res_out/res_out_AD/AD_grad_ascent_sing.Rds")
 
-## Because of how the output from the deterministic runs were saved, the Rds files
- ## need to be loaded with help from the parameters in res_tol_determ_manual_setup.R
-  ## The parameter values in this script should not be changed.
+## If you are saving a large number of determnistic runs (RD), because of how the output from the
+ ## deterministic runs are saved, the Rds files need to be loaded after res_tol_determ_manual_setup.R
+  ## is run with the parameters used to run the sim that generated that Rds file (and other is fine, 
+   ## but the parameters need to be contained)
   
-## Need to run res_tol_determ_manual_setup.R to get the parameter values that correspond
- ## to the saved Rds files
-
 ## To match stochastic results to deterministic results, search for parameter values for a given
  ## stochastic run in the deterministic parater value set, then load the appropriate saved Rds
 
@@ -34,14 +32,15 @@ params %>%
   dplyr::select(param_num)
   
 ## and load that row
-determ.res_subset <- readRDS("res_out/res_out_RD/res_1000_all_determ_6.Rds")
+  # determ.res_subset <- readRDS("res_out/res_out_RD/res_1000_all_determ_6.Rds")
 ## Temp R0 column for plotting on the surface. May actually want to plot calculated R0 later
 determ.res_subset  <- determ.res_subset[[1]]
-## Eeek! The deterministic data frame has the names flipped!!!
+## NOTE: ** Eeek! The deterministic data frame has the names flipped!!!
+ ## need to change by_row in mat_out in res_tol_determ_manual_setup.R I believe
 names(determ.res_subset)[c(3, 4, 5)] <- c("R0", "tune", "agg")
 
 ## What is recorded in this data frame is actual proportion of I from the deterministic run (sum = 1 - S)
-## Need to scale density to calculate mean and sd
+ ## Need to scale density to calculate mean and sd
 determ.res_subset <- determ.res_subset %>% 
   group_by(Time) %>%
   mutate(R0 = R0 / sum(R0))

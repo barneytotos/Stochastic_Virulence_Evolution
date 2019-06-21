@@ -2,6 +2,9 @@
 ### Plots for both determinisitc and stochastic runs, final output for results for  ###
 #######################################################################################
 
+## Remember, to work through this script, need parameter values from res_tol_determ_manual_setup.R in 
+ ## addition to results
+
 ## Build the R0 surface with the parameters of a given run parameter set
 eff_scale <- stochas.res_subset$eff_scale[1]
 
@@ -19,6 +22,7 @@ alpha0     <- c(seq(mut_link_p$linkfun(0.01), mut_link_p$linkfun(0.99), length =
 tuning     <- c(seq(mut_link_p$linkfun(0.01), mut_link_p$linkfun(0.99), length = 100))
 tol0       <- 1
 res0       <- 1
+## Need to built the right surface for plotting
 startvals  <- calc_startvals_determ(
   alpha0     = alpha0
 , tuning     = tuning
@@ -26,7 +30,7 @@ startvals  <- calc_startvals_determ(
 , tol0       = tol0
 , gamma0     = 0.2
 , d          = 0.01
-, N          = 4000
+, N          = 2000
 , power_c    = 2
 , power_exp  = 2
 , mut_link_h = mut_link_h
@@ -36,7 +40,7 @@ startvals  <- calc_startvals_determ(
 beta_surface <- startvals$joint_beta
 R0_surface   <- sweep(beta_surface, 2
   , (
-#    mut_link_p$linkinv(alpha0 - log(tol0) - log(res0)) + 0.2 + 0.01
+  ## Likely should also pull in parameter values instead of using raw numbers in places like this
    1 - (1 - mut_link_p$linkinv(alpha0 - log(tol0) - log(res0))) * (1 - 0.2) * (1 - 0.01)
     )
   , FUN = "/")
@@ -61,6 +65,7 @@ names(R0_surface_p)[3] <- "R0"
 ######
 
 ## Summarize stochastic run
+ ## Could consider melting and using aes(group = variable) instead to make plot code cleaner
 stochas.res_subset <- transform(stochas.res_subset, R0 = 0)
 stochas.res_subset_s <- stochas.res_subset %>%
   group_by(time) %>%
@@ -77,23 +82,16 @@ stochas.res_subset_s <- stochas.res_subset %>%
   , q95_mean_plbeta  = quantile(mean_plbeta, 0.95)) %>%
   mutate(R0 = 0)
 
-## Could consider melting and using aes(group = variable) instead to make plot code cleaner
-#stochas.res_subset_s <- melt(stochas.res_subset_s, c("time", "R0"))
+# stochas.res_subset_s <- melt(stochas.res_subset_s, c("time", "R0"))
 
 ######
 ## Deterministic run
 ######
 
-###########################################################################################
-## At one point I thought that the deterministic data frame has the names flipped, but I am
-## not so certain about that anymore
-###########################################################################################
-#names(determ.res_subset)[c(4, 5)] <- c("tune", "agg")
-
 ## Summarize deterministic run into the median and quantiles
-### ****** IMPORTANT ****** R0 here is not R0, it is the density, it is just called R0 so that
-### it can be plotted on the R0 surface
-## Also ******** Important ********* recal that plbeta means tune here
+## NOTE: ** R0 here is not R0, it is the _density_, it is just called R0 so that
+## it can be plotted on the R0 surface
+## Also NOTE: ** recal that plbeta may mean tuning here depending on the model
 
 #######
 ## Cleanly calculate the mean and sd for both agg and tune
@@ -124,56 +122,13 @@ mat_out_all_temp_s <- rbind(determ.res_temp_agg, determ.res_temp_tune)
 mat_out_all_temp_s <- mat_out_all_temp_s %>% mutate(R0 = 0)
 
 ## For now have to adjust this manually.
- ## e.g. add mut_sd 
+ ## e.g. add mut_sd. A bit loose to call it the same, but for plotting
 mat_out_all_temp_s <- transform(mat_out_all_temp_s
   , mut_sd = 0.0625
   )
 
-#######
-## ....OR.... Jump through a number of hoops to calculate the median and quantiles
-#######
-
-## pleasant way to filter with a series
-#years_wanted <- seq(10, 1000, by = 30)
-#mat_out_all_temp <- determ.res_subset %>% filter(Time %in% years_wanted)
-  
-#mat_out_all_temp_s_tune <- mat_out_all_temp %>%
-#  group_by(Time, tune) %>%
-#  ## marginal
-#  summarize(marg_agg = sum(R0)) %>%
-#  group_by(Time) %>%
-#  ## cumulative sum in order to get quantiles
-#  mutate(cum_sum  = cumsum(marg_agg) / max(cumsum(marg_agg))) %>%
-#  ## find the quantiles
-#  summarize(
-#    q05_mean_plalpha = tune[which(cum_sum > 0.05)[1]]
-#  , q25_mean_plalpha = tune[which(cum_sum > 0.25)[1]]
-#  , q50_mean_plalpha = tune[which(cum_sum > 0.50)[1]]
-#  , q75_mean_plalpha = tune[which(cum_sum > 0.75)[1]]
-#  , q95_mean_plalpha = tune[which(cum_sum > 0.95)[1]]
-#  )
-
-#mat_out_all_temp_s_agg <- mat_out_all_temp %>%
-#  group_by(Time, agg) %>%
-#  ## marginal
-#  summarize(marg_tune = sum(R0)) %>%
-#  group_by(Time) %>%
-#  ## cumulative sum in order to get quantiles
-#  mutate(cum_sum  = cumsum(marg_tune) / max(cumsum(marg_tune))) %>%
-#  ## find the quantiles
-#  summarize(
-#    q05_mean_plbeta = agg[which(cum_sum > 0.05)[1]]
-#  , q25_mean_plbeta = agg[which(cum_sum > 0.25)[1]]
-#  , q50_mean_plbeta = agg[which(cum_sum > 0.50)[1]]
-#  , q75_mean_plbeta = agg[which(cum_sum > 0.75)[1]]
-#  , q95_mean_plbeta = agg[which(cum_sum > 0.95)[1]]
-#  )
-  
-#mat_out_all_temp_s <- cbind(mat_out_all_temp_s_agg, mat_out_all_temp_s_tune[, -1])
-#mat_out_all_temp_s <- mat_out_all_temp_s %>% mutate(R0 = 0)
-
 ######
-## Then restrict to a smaller range of times for the R0 surface plots
+## Restrict to a smaller range of times for the R0 surface plots
 ######
 
 ## Have to set this up by hand for each depending on the speed of the deterministic simulation
@@ -263,6 +218,7 @@ ggright <- ggplot(R0_surface_p, aes(tune, agg, z = R0/max(R0))) +
 ############
   
 ## The tradeoff curve for ggplots tracking progress on tradeoff space
+ ## Again, not dynamic enough here to type in parameter values...
 power_trade_dat <- data.frame(
     alpha = seq(0.01, 1.0, by = 0.01)
   , beta  = power_tradeoff(alpha = seq(0.01, 1.0, by = 0.01), c = 0.75, curv = 2)
@@ -284,20 +240,6 @@ power_trade_dat_prob <- power_trade_dat_prob %>%
     beta_rel = beta / max(beta)
   , R0_rel   = R0 / max(R0)
   )
-
-######
-## If jumping through some hoops for median, probably need to smooth for the plot, 
-## so likely just best to use mean and sd
-######
-
-## Not super scientific, but smooth to fill in the gaps of the deterministic model because of the
-  ## breaks in the time frame
-#smoothed_q50_mean_plalpha <- predict(smooth.spline(mat_out_all_temp_s$q50_mean_plalpha, spar = 0.4), x = seq(1, 34, by = 0.5))
-#smoothed_q50_mean_plbeta  <- predict(smooth.spline(mat_out_all_temp_s$q50_mean_plbeta, spar = 0.4), x = seq(1, 34, by = 0.5))
-#determ_smooth <- data.frame(
-#  q50_mean_plalpha = smoothed_q50_mean_plalpha$y
-#, q50_mean_plbeta  = smoothed_q50_mean_plbeta$y
-#)
 
 #######
 ## Plot for the virulence beta result
@@ -491,34 +433,6 @@ Deviation") +
 ### Determinisitc results
 #########
 
-## Requires mat_out_all_temp_s created earlier in this script
-
-## Thought that these were flipped, but not confident: Eeek! The deterministic data frame has the names flipped!!!
-# names(determ.res_temp)[c(4, 5)] <- c("tune", "agg")
-
-#determ_smooth <- data.frame(
-#    q05_mean_plalpha = predict(smooth.spline(mat_out_all_temp_s$q05_mean_plalpha, spar = 0.4), x = seq(1, 34, by = 0.5))$y
-#  , q25_mean_plalpha = predict(smooth.spline(mat_out_all_temp_s$q25_mean_plalpha, spar = 0.4), x = seq(1, 34, by = 0.5))$y
-#  , q50_mean_plalpha = predict(smooth.spline(mat_out_all_temp_s$q50_mean_plalpha, spar = 0.4), x = seq(1, 34, by = 0.5))$y
-#  , q75_mean_plalpha = predict(smooth.spline(mat_out_all_temp_s$q75_mean_plalpha, spar = 0.4), x = seq(1, 34, by = 0.5))$y
-#  , q95_mean_plalpha = predict(smooth.spline(mat_out_all_temp_s$q95_mean_plalpha, spar = 0.4), x = seq(1, 34, by = 0.5))$y
-#  , q05_mean_plbeta  = predict(smooth.spline(mat_out_all_temp_s$q05_mean_plbeta, spar = 0.4), x = seq(1, 34, by = 0.5))$y
-#  , q25_mean_plbeta  = predict(smooth.spline(mat_out_all_temp_s$q25_mean_plbeta, spar = 0.4), x = seq(1, 34, by = 0.5))$y
-#  , q50_mean_plbeta  = predict(smooth.spline(mat_out_all_temp_s$q50_mean_plbeta, spar = 0.4), x = seq(1, 34, by = 0.5))$y
-#  , q75_mean_plbeta  = predict(smooth.spline(mat_out_all_temp_s$q75_mean_plbeta, spar = 0.4), x = seq(1, 34, by = 0.5))$y
-#  , q95_mean_plbeta  = predict(smooth.spline(mat_out_all_temp_s$q95_mean_plbeta, spar = 0.4), x = seq(1, 34, by = 0.5))$y
-#  )
-
-## go back to determ tidy and reload the needed deterministic run
-#determ_smooth <- transform(determ_smooth
-#  , Time = seq(mat_out_all_temp_s$Time[1], mat_out_all_temp_s$Time[length(mat_out_all_temp_s$Time)], by = 15)
-#  , mu   = rep(determ.res_subset[[3]]$mu, nrow(determ_smooth))
-#)
-
-## Need to calculate sd of the RD distribution
-## **** For now copying code, but should add to the place far above where I calculate the
- ## mean of the distribution
-
 ## Plot just the deterministic results
 ggplot(mat_out_all_temp_s, aes(Time, mean)) + 
   geom_ribbon(aes(
@@ -587,6 +501,8 @@ with(stochas.res_subset, list(mu = unique(mu), mut_sd = unique(mut_sd), alpha0 =
 #######
 ## Summary of all parameter values all runs
 #######
+
+## Moderately convoluted tidy stuff going on here, many steps... 
 
 stochas.res_temp_s <- stochas.res_subset %>%
   group_by(

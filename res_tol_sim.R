@@ -32,8 +32,7 @@ for (i in 1:nrow(params)) {
  , power_exp           = power_exp[i]
  , b_decay             = b_decay[i]
  , b                   = b[i]
-# , N                   = N[i]
- , N                   = 2000
+ , N                   = N[i]
  , balance_birth       = balance_birth[i]
  , stochastic_birth    = stochastic_birth[i]
  , fill_birth          = fill_birth[i]
@@ -41,6 +40,7 @@ for (i in 1:nrow(params)) {
  , parasite_tuning     = parasite_tuning[i]
  , tradeoff_only       = tradeoff_only[i]
  , eff_scale           = eff_scale[i]
+ , debug               = FALSE
  , debug2              = FALSE
  , debug3              = FALSE
  , host_evo_delay      = FALSE
@@ -114,6 +114,9 @@ res_1000_stochas_s <- res_1000_stochas %>%
 ############
 ## AD run ##
 ############
+
+## Just the deterministic version run here, can also run the stochastic AD with:
+ ## par_evo_AD_rand function
 
 ## Gradient Ascent
 ## Need power c and power exp?

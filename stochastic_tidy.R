@@ -2,7 +2,8 @@
 ## Load and clean up stochastic runs ## 
 #######################################
 
-stochas.res <- readRDS("res_out/res_out_DTS/res_1000_all_stochas_all.Rds")
+## Some place you previously saved the file
+# stochas.res <- readRDS("res_out/res_out_DTS/res_1000_all_stochas_all.Rds")
 
 ## Maybe not a complete run, so droplevels first
 stochas.res <- droplevels(stochas.res)

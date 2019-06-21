@@ -5,7 +5,6 @@
 nt            <- 2e5
 num_points    <- 600
 rptfreq       <- max(nt / num_points, 1) 
-nrpt          <- nt %/% rptfreq
 num_runs      <- 200
 deterministic <- FALSE ## run the model via reaction-diffusion deterministic?
 
@@ -23,7 +22,13 @@ deterministic <- FALSE ## run the model via reaction-diffusion deterministic?
 params <- expand.grid(
    nt                  = nt
  , rptfreq             = rptfreq
- , nrpt                = nrpt
+ , deterministic       = deterministic
+  ## ** !! key parameters.
+  ## (FALSE, FALSE) for just tradeoff curve
+  ## (TRUE, FALSE) for tuning to work
+  ## for nearly neutral see Ben's results and use Ben's script
+ , parasite_tuning     = FALSE
+ , tradeoff_only       = FALSE
  , mut_var             = "beta"
  , d                   = 0.01
 ## Need to convert this to a rate of diffusion if deterministic == TRUE
@@ -36,7 +41,7 @@ params <- expand.grid(
  #  0.20
  }
  , mut_mean            = -1
- , mut_sd              = c(0.5)  #  c(0.01, 0.05, 0.10, 0.15, 0.20, 0.25) 
+ , mut_sd              = c(0.10)  #  c(0.01, 0.05, 0.10, 0.15, 0.20, 0.25) 
 ## If deterministic == TRUE, start with a whole array of possible strain values for virulence (done internally)
  , alpha0              = 0.03 # c(0.05, 0.95) c(0.05, 0.05, 0.21, 0.45, 0.81) 
  , tune0               = 0.97 # c(0.05, 0.95)
@@ -45,7 +50,7 @@ params <- expand.grid(
  , run                 = seq(1, num_runs, by = 1)
  , mut_host_mean_shift = 1      
  , mut_host_sd_shift   = 1
- , mut_host_mu_shift   = 100000000000
+ , mut_host_mu_shift   = 100000000000 # need some huge number here
  , mut_host_res_bias   = 0
  , host_dyn_only       = FALSE
  , power_c             = if (deterministic == FALSE) {
@@ -57,21 +62,9 @@ params <- expand.grid(
  , b_decay             = 2.3
  , b                   = 0.5
  , N                   = 200
- , balance_birth       = FALSE
- , stochastic_birth    = TRUE
- , fill_birth          = TRUE
+ , birth_type          = "fill"
  , agg_eff_adjust      = TRUE
-## ** !! key parameters.
-  ## (FALSE, FALSE) for just tradeoff curve
-  ## (TRUE, FALSE) for tuning to work
-  ## for nearly neutral see Ben's results and use Ben's script
- , parasite_tuning     = FALSE
- , tradeoff_only       = TRUE
-  
  , eff_scale           = 30 # c(10, 30, 50, 70, 90)
-## R0_init is now deprecated, just a placeholder that isn't used until I change the function
- , R0_init             = 2
- , deterministic       = deterministic
   )
 
 params <- transform(params

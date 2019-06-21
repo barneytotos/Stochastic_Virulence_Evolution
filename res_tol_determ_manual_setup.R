@@ -199,7 +199,7 @@ for (i in 1:nrow(params)) {
   if (class(res_1000) != "try-error") {
  
 ## Melt the deteministic matrix into a data frame and simplify
-## plot on the R0 surface or not?
+ ## plot on the R0 surface or not?
 determ_med_R0 <- data.frame(
   Time     = seq(1, nrow(res_1000))
 , med_R0   = 0
@@ -210,7 +210,7 @@ for (j in seq(1, nrow(res_1000), by = 1)) {
     , nrow = length(tuning)
     , ncol = length(alpha0)
     , byrow = FALSE
- #   , byrow = TRUE
+ #  , byrow = TRUE
     )
   determ_med_R0[j, ]$dist_R0 <- sum(mat_out * R0_surface)
   determ_med_R0[j, ]$med_R0  <- R0_surface[which(mat_out == max(mat_out), arr.ind = TRUE)]
@@ -232,6 +232,7 @@ for (j in seq(1, nrow(res_1000), by = 1)) {
 
 run_name <- paste("res_1000_all_determ", i, sep = "_")
 run_name <- paste(run_name , ".Rds", sep = "")
+## Ya, ugly. Update this....
 run_name <- paste("/Users/Morgan/Documents/Research/McMaster/Bolker_Projects_in_Progress/nearlyneutralHP/MPK_vir_evo/res_out_determ/", run_name, sep = "")
 
 saveRDS(list(mat_out_all, determ_med_R0, params[i, ]), run_name)
