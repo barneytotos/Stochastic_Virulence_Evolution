@@ -43,7 +43,9 @@ source("funs_SIR.R")
 ## set up parameters
 source("parameter_setup.R")
 
-## run the sim
+## run the sim. For manual plotting exploration the output from this script to use is:
+ ## res_1000_stochas   : all
+ ## res_1000_stochas_s : runs summarized into quantiles
 source("res_tol_sim.R")
   
 #####

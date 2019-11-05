@@ -47,11 +47,9 @@ params <- data.frame(
     rep(600, 5)
   , c(200, 1800)
   , rep(600, 2))
- , balance_birth       = FALSE
- , stochastic_birth    = TRUE
- , fill_birth          = TRUE
+ , birth_type          = "fill"
  , agg_eff_adjust      = TRUE
- , parasite_tuning     = FALSE
+ , parasite_tuning     = TRUE
  , eff_scale           = c(
     rep(30, 5)
   , rep(30, 2)
@@ -104,9 +102,7 @@ params2 <- data.frame(
     rep(600, 5)
   , c(200, 1800)
   , rep(600, 2))
- , balance_birth       = FALSE
- , stochastic_birth    = TRUE
- , fill_birth          = TRUE
+ , birth_type          = "fill"
  , agg_eff_adjust      = TRUE
  , parasite_tuning     = TRUE
  , eff_scale           = c(
@@ -123,14 +119,14 @@ params3 <- data.frame(
  , mut_var             = rep("beta", 4)
  , d                   = rep(0.01, 4)
  , mu                  = c(
-#     c(0.001, 0.005, 0.025, 0.005, 0.005)   ## 1 from paper: see keynote
-     rep(0.005, 2)                           ## 2 from paper: see keynote
-   , rep(0.005, 2))                          ## 3 from paper: see keynote
+#    c(0.001, 0.005, 0.025, 0.005, 0.005)   ## 1 from paper: see keynote
+     rep(0.005, 2)                          ## 2 from paper: see keynote
+   , rep(0.005, 2))                         ## 3 from paper: see keynote
  , mut_mean            = c(0)
  , mut_sd              = c(
-#     c(0.05, 0.05, 0.05, 0.01, 0.25)        ## 1 from paper: see keynote
-     rep(0.05, 2)                            ## 2 from paper: see keynote
-   , rep(0.05, 2))                           ## 3 from paper: see keynote
+#    c(0.05, 0.05, 0.05, 0.01, 0.25)        ## 1 from paper: see keynote
+     rep(0.05, 2)                           ## 2 from paper: see keynote
+   , rep(0.05, 2))                          ## 3 from paper: see keynote
  , alpha0              = rep(0.03, 4)
  , tune0               = rep(0.03, 4)
  , tol0                = 1
@@ -145,16 +141,14 @@ params3 <- data.frame(
  , b_decay             = 2.3
  , b                   = 0.5
  , N                   = c(
- #   rep(600, 5)
+ #  rep(600, 5)
     c(200, 1800)
   , rep(600, 2))
- , balance_birth       = FALSE
- , stochastic_birth    = TRUE
- , fill_birth          = TRUE
+ , birth_type          = "fill"
  , agg_eff_adjust      = TRUE
  , parasite_tuning     = TRUE
  , eff_scale           = c(
-#    rep(30, 5)
+#   rep(30, 5)
     rep(30, 2)
   , c(10, 50))
  , R0_init             = 2
@@ -175,6 +169,9 @@ params <- transform(params, run = rep(seq(1, num_runs), 22))
 params <- transform(params
   , param_num = seq(1, nrow(params))
   , seed      = sample(1:1e5, nrow(params), replace = FALSE))
+
+## Update Nov 1: For trial run, just keep one parameter value set to make sure things are working
+params <- params[params$nt == 2e5, ][1:250, ]
 
 ######
 ## Run the sim
@@ -211,9 +208,7 @@ for (i in 1:nrow(params)) {
  , b_decay             = b_decay[i]
  , b                   = b[i]
  , N                   = N[i]
- , balance_birth       = balance_birth[i]
- , stochastic_birth    = stochastic_birth[i]
- , fill_birth          = fill_birth[i]
+ , birth_type          = birth_type[i]
  , agg_eff_adjust      = agg_eff_adjust[i]
  , parasite_tuning     = parasite_tuning[i]
  , tradeoff_only       = TRUE               ### !!! new parameter to be added
@@ -261,3 +256,5 @@ if ((i/100 %% 1) == 0) {
 }
 
 }
+
+

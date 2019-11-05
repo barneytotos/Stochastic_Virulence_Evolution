@@ -5,7 +5,7 @@
 nt            <- 2e5
 num_points    <- 600
 rptfreq       <- max(nt / num_points, 1) 
-num_runs      <- 200
+num_runs      <- 5
 deterministic <- FALSE ## run the model via reaction-diffusion deterministic?
 
 ## Need to cover a range of: (over a number of replicate runs)
@@ -24,11 +24,14 @@ params <- expand.grid(
  , rptfreq             = rptfreq
  , deterministic       = deterministic
   ## ** !! key parameters.
-  ## (FALSE, FALSE) for just tradeoff curve
-  ## (TRUE, FALSE) for tuning to work
+  ## (TRUE, --, --) for tuning
+  ## (FALSE, TRUE, --) for just tradeoff curve
+  ## (FALSE, FALSE, FALSE) for _no_ parastie beta setback with evo change in alpha
+  ## (FALSE, FALSE, TRUE) for parastie beta setback with evo change in alpha
   ## for nearly neutral see Ben's results and use Ben's script
  , parasite_tuning     = FALSE
- , tradeoff_only       = FALSE
+ , tradeoff_only       = TRUE
+ , agg_eff_adjust      = FALSE
  , mut_var             = "beta"
  , d                   = 0.01
 ## Need to convert this to a rate of diffusion if deterministic == TRUE
@@ -40,11 +43,11 @@ params <- expand.grid(
    0.002
  #  0.20
  }
- , mut_mean            = -1
- , mut_sd              = c(0.10)  #  c(0.01, 0.05, 0.10, 0.15, 0.20, 0.25) 
+ , mut_mean            = -0.5
+ , mut_sd              = c(0.15)  #  c(0.01, 0.05, 0.10, 0.15, 0.20, 0.25) 
 ## If deterministic == TRUE, start with a whole array of possible strain values for virulence (done internally)
- , alpha0              = 0.03 # c(0.05, 0.95) c(0.05, 0.05, 0.21, 0.45, 0.81) 
- , tune0               = 0.97 # c(0.05, 0.95)
+ , alpha0              = 0.25 # c(0.05, 0.95) c(0.05, 0.05, 0.21, 0.45, 0.81) 
+ , tune0               = 0.03 # 0.97 # c(0.05, 0.95)
  , tol0                = 1
  , res0                = 1
  , run                 = seq(1, num_runs, by = 1)
@@ -63,10 +66,13 @@ params <- expand.grid(
  , b                   = 0.5
  , N                   = 200
  , birth_type          = "fill"
- , agg_eff_adjust      = TRUE
  , eff_scale           = 30 # c(10, 30, 50, 70, 90)
   )
 
 params <- transform(params
   , param_num = seq(1, nrow(params))
   , seed      = sample(1:1e5, nrow(params), replace = FALSE))
+
+## Also run AD version?
+AD_also <- FALSE
+

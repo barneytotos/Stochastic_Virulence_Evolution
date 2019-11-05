@@ -33,9 +33,7 @@ for (i in 1:nrow(params)) {
  , b_decay             = b_decay[i]
  , b                   = b[i]
  , N                   = N[i]
- , balance_birth       = balance_birth[i]
- , stochastic_birth    = stochastic_birth[i]
- , fill_birth          = fill_birth[i]
+ , birth_type          = birth_type[i]
  , agg_eff_adjust      = agg_eff_adjust[i]
  , parasite_tuning     = parasite_tuning[i]
  , tradeoff_only       = tradeoff_only[i]
@@ -47,7 +45,6 @@ for (i in 1:nrow(params)) {
  , host_evo_delay_start= 30
  , host_evo_delay_stop = 140
  , progress            = TRUE
- , R0_init             = R0_init[i]
  , deterministic       = deterministic[i]
 ## Some defaults here for deterministic run. Ignored if deterministic = FALSE
  , determ_length       = 400
@@ -80,16 +77,15 @@ if (i %% 20 == 0) {
 }
 
 res_1000_all <- transform(res_1000_all, mut_mean = as.factor(mut_mean))
-#res_1000_all <- transform(res_1000_all, run = as.numeric(run))
+# res_1000_all <- transform(res_1000_all, run = as.numeric(run))
 res_1000_all <- transform(res_1000_all, tol0 = as.factor(tol0))
 res_1000_all <- transform(res_1000_all, res0 = as.factor(res0))
 
 ## Little bit of code for debugging/plotting single runs
-res_1000_all     <- transform(res_1000_all, R0 = 0)
+# res_1000_all     <- transform(res_1000_all, R0 = 0)
 res_1000_stochas <- res_1000_all
 
-res_1000_stochas <- rbind(res_1000_all, res_1000_stochas)
-
+# res_1000_stochas <- rbind(res_1000_all, res_1000_stochas)
 
 ######
 ## Summarize multiple runs 
@@ -110,14 +106,13 @@ res_1000_stochas_s <- res_1000_stochas %>%
   , q95_mean_plbeta  = quantile(mean_plbeta, 0.95)) %>%
   mutate(R0 = 0)
 
-
 ############
 ## AD run ##
 ############
 
 ## Just the deterministic version run here, can also run the stochastic AD with:
  ## par_evo_AD_rand function
-
+if (AD_also == TRUE) {
 ## Gradient Ascent
 ## Need power c and power exp?
 grad_ascent <- par_evo_AD(
@@ -142,4 +137,4 @@ grad_max_range <- par_evo_AD(
 , Iseed      = c(50, 950)
 , simul_mut  = TRUE
 , max_range  = TRUE)
-
+}
