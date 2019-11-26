@@ -1272,14 +1272,6 @@ run_sim <- function(
 
     if (!is.null(seed)) set.seed(seed)
 
-    if (is.null(Imat)) {
-        ## start at equilibrium I ...
-        Imat <- max(1, round(N*(1 - 1/R0_init)))
-        Imat <- as.matrix(Imat)
-    }
-
-    Svec  <- N-Imat
-
    ## Set up mutation link
     if (mut_var=="beta") {
         if (is.null(mut_link_p)) mut_link_p <- make.link("logit")
@@ -1307,6 +1299,15 @@ run_sim <- function(
     , power_exp, mut_link_h, mut_link_p, eff_scale, parasite_tuning, tradeoff_only)
     beta0      <- startvals$joint_beta
 
+     if (is.null(Imat)) {
+   ## start at equilibrium I ...
+      Imat <- max(1, round(N*(1 - 1/R0_init)))
+      Imat <- as.matrix(Imat)
+    }
+
+    Svec  <- N-Imat
+    
+    
     } else {
 
       alpha0     <- c(seq(
@@ -1399,7 +1400,7 @@ run_sim <- function(
 
      ## Added tracking host responses
     res <- as.data.frame(matrix(
-      NA, nrow = nrpt, ncol = 19
+      NA, nrow = nrpt, ncol = 22
     , dimnames = list(
       NULL
     , c("time"
@@ -1414,6 +1415,9 @@ run_sim <- function(
       , paste0(c("mean_pl", "sd_pl"), "alpha")
       , "mean_alpha"
       , "sd_alpha"
+      , "median_alpha"
+      , "lower_alpha"
+      , "upper_alpha"
       , "mean_beta"
       , "sd_beta"
       ## just list the non-evolving param
@@ -1605,10 +1609,10 @@ run_sim <- function(
 
             }  ## rptfreq time steps
       
-      #  browser()
-    #  if (i == 200) {
-     #   browser()
-    #  }
+  #    browser()
+  #    if (i == 100) {
+  #    browser()
+  #    }
       
         ## summary statistics
         I_tot        <- ncol(state$Imat)
@@ -1618,6 +1622,10 @@ run_sim <- function(
         ltrait_sd    <- sqrt(sum(colSums(state$Imat)*(state$ltraitvec-ltrait_mean)^2)/num_I)
         lalpha_mean  <- sum(colSums(state$Imat)*state$palphavec)/num_I
         lalpha_sd    <- sqrt(sum(colSums(state$Imat)*(state$palphavec-lalpha_mean)^2)/num_I)
+        lalpha_q     <- quantile(rep(state$palphavec, colSums(state$Imat)), c(0.025, 0.50, 0.975))
+        lalpha_est   <- lalpha_q[2]
+        lalpha_lwr   <- lalpha_q[1]
+        lalpha_upr   <- lalpha_q[3]
         num_S        <- sum(state$Svec)
         S_tot        <- length(state$Svec)
         lhres_mean   <- sum(state$Svec*state$hrtraitvec)/num_S
@@ -1650,6 +1658,9 @@ run_sim <- function(
         , lalpha_sd
         , avg_alpha
         , sd_alpha
+        , lalpha_est
+        , lalpha_lwr
+        , lalpha_upr
         , avg_beta
         , sd_beta
         , ifelse(mut_var == "beta", state$gamma[1,1], state$gamma[1,1]))

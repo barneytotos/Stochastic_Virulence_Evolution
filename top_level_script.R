@@ -19,6 +19,8 @@
 
 ## See NOTE: ** for a couple of key notes in a few scripts
 
+host_mort <- FALSE
+
 ## required packages
 source("needed_packages.R")
 
@@ -26,8 +28,13 @@ source("needed_packages.R")
 source("ggplot_theme.R")
 
 ## Required functions to run the model.
- ## **Note: This script is poorly named; the model is an SIS model with mortality.
+ ## **Note: The SIR script is poorly named, it is SIS with host mortality. 
+ ## funs_SIS.R is SIS with no host mortality
+if (host_mort == TRUE) {
 source("funs_SIR.R")
+} else {
+source("funs_SIS.R")   
+}
 
 #####
 ## Options to run the model and store results include
@@ -41,21 +48,33 @@ source("funs_SIR.R")
 #####
 
 ## set up parameters
+if (host_mort == TRUE) {
 source("parameter_setup.R")
+} else {
+source("parameter_setup_nm.R")   
+}
 
 ## run the sim. For manual plotting exploration the output from this script to use is:
  ## res_1000_stochas   : all
  ## res_1000_stochas_s : runs summarized into quantiles
+if (host_mort == TRUE) {
 source("res_tol_sim.R")
+} else {
+source("vir_evo_sim.R")
+}
   
 #####
 ## Option 2
 #####
 
+if (host_mort == TRUE) {
 ## Set up parameter values
 source("res_tol_stochas_manual_setup.R")
 source("res_tol_determ_manual_setup.R")
 source("res_tol_ad_manual_setup.R")
+} else {
+source("vir_evo_stochas_manual_setup.R")   
+}
 
 ## Examine the results
 source("stochastic_tidy.R")

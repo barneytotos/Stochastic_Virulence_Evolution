@@ -33,21 +33,18 @@ params <- expand.grid(
  , tradeoff_only       = TRUE
  , agg_eff_adjust      = FALSE
  , mut_var             = "beta"
- , d                   = 0.01
 ## Need to convert this to a rate of diffusion if deterministic == TRUE
  , mu                  = if (deterministic == FALSE) {
    c(0.01)
- # c(1E-5, 5E-5, 1E-4, 5E-4, 1E-3, 5E-3, 1E-2)
  } else {
- #  0.025
-   0.002
- #  0.20
+   0.025
  }
- , mut_mean            = 0 # -0.4
- , mut_sd              = c(0.15)  #  c(0.01, 0.05, 0.10, 0.15, 0.20, 0.25) 
+ , mut_mean            = 0 
+ , mut_sd              = c(0.15) 
 ## If deterministic == TRUE, start with a whole array of possible strain values for virulence (done internally)
- , alpha0              = 0.01 # c(0.05, 0.95) c(0.05, 0.05, 0.21, 0.45, 0.81) 
- , tune0               = 0.03 # 0.97 # c(0.05, 0.95)
+## Ignored if not 
+ , alpha0              = 0.01
+ , tune0               = 0.03
  , tol0                = 1
  , res0                = 1
 ## min recovery rate driven by the host. For SIS without host mortality can't allow parasites to drop recovery to 0 without
