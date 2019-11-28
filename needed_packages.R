@@ -12,6 +12,7 @@ needed_packages <- c(
 , "abind"
 , "gganimate"
 , "reshape2"
+, "lhs"
   )
 
 ## Check if the packages are installed. If they are not install them, then load them

@@ -171,7 +171,7 @@ params <- transform(params
   , seed      = sample(1:1e5, nrow(params), replace = FALSE))
 
 ## Update Nov 1: For trial run, just keep one parameter value set to make sure things are working
-params <- params[params$nt == 2e5, ][1:250, ]
+# params <- params[params$nt == 2e5, ][1:250, ]
 
 ######
 ## Run the sim

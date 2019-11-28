@@ -1,6 +1,6 @@
-###################################
-## Parameters for the simulation ##
-###################################
+##########################################################
+## Parameters for the simulation, SIS without mortality ##
+##########################################################
 
 nt            <- 1e5
 num_points    <- 600
@@ -40,34 +40,24 @@ params <- expand.grid(
    0.025
  }
  , mut_mean            = 0 
- , mut_sd              = c(0.15) 
+ , mut_sd              = 0.15
 ## If deterministic == TRUE, start with a whole array of possible strain values for virulence (done internally)
 ## Ignored if not 
  , alpha0              = 0.01
  , tune0               = 0.03
- , tol0                = 1
- , res0                = 1
 ## min recovery rate driven by the host. For SIS without host mortality can't allow parasites to drop recovery to 0 without
  ## any other background mortality or recovery or hosts will evolve to either 0 recovery or max recovery depending on whether
   ## the tradeoff gamma is > or < 1
  , gamma0              = 0.2
  , run                 = seq(1, num_runs, by = 1)
- , mut_host_mean_shift = 1      
- , mut_host_sd_shift   = 1
- , mut_host_mu_shift   = 100000000000 # need some huge number here
- , mut_host_res_bias   = 0
- , host_dyn_only       = FALSE
  , power_c             = if (deterministic == FALSE) {
-   0.01 #  0.75
+   0.01
    } else {
    10
    } 
- , power_exp           = 3 # 2
- , b_decay             = 2.3
- , b                   = 0.5
+ , power_exp           = 3 
  , N                   = 400
- , birth_type          = "fill"
- , eff_scale           = 30 # c(10, 30, 50, 70, 90)
+ , eff_scale           = 30
   )
 
 params <- transform(params

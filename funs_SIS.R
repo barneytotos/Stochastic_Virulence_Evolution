@@ -27,7 +27,7 @@
 ## Accessory Functions
 ######
 get_mut_p        <- function (orig_trait, mut_var, power_c, power_exp, mut_link_p, mut_mean
-  , mut_sd, mut_type = "shift", agg_eff_adjust, parasite_tuning, tradeoff_only) {
+  , mut_sd, mut_type = "shift", agg_eff_adjust, eff_hit, parasite_tuning, tradeoff_only) {
 
    if (mut_type == "shift") {
 
@@ -64,7 +64,7 @@ get_mut_p        <- function (orig_trait, mut_var, power_c, power_exp, mut_link_
            
         if (agg_eff_adjust == TRUE) {
 
-      new_trait_pos <- orig_trait$pos_trait - neg_trait_adj
+      new_trait_pos <- orig_trait$pos_trait - abs(neg_trait_adj) * eff_hit
 
           ## Assume a negatively evolving efficiency
         new_trait_pos <- new_trait_pos +
@@ -186,10 +186,6 @@ data = rmultinom(
 , byrow = TRUE
 )
 
-}
-## Power law relationship between alpha and beta
-power_tradeoff   <- function (alpha, c, curv) {
-  c * alpha ^ (1 / curv)
 }
 ## calculate c for a power law that goes through the current strain | efficiency
 pt_calc_c        <- function (alpha, beta, curv) {
@@ -363,6 +359,23 @@ epi.fun.wm   <- function (t, y, parms) {
 }
 
 ######
+## power tradeoff and R0 functions
+######
+power_tradeoff <- function (alpha, c, curv) {
+  c * alpha ^ (1 / curv)
+}
+power_R0       <- function (alpha, c, curv, gamma, N) {
+  ( N * c * alpha ^ (1 / curv) )  / ( alpha + gamma )
+}
+power_R0_slope <- function (alpha, c, curv, gamma, N) {
+  ( N * c * alpha ^ (1 / (curv - 1)) * (gamma - curv * alpha + alpha) )  / ( curv * (alpha + gamma)^2 )
+}
+power_R0_grad  <- function (alpha, c, curv, gamma, N, eps) {
+ (power_R0(alpha, c, curv, gamma, N) + power_R0_slope(alpha + eps, c, curv, gamma, N)) / 
+   power_R0(alpha, c, curv, gamma, N) 
+}
+
+######
 ## AD functions to come later possibly
 ######
 
@@ -399,12 +412,13 @@ run_sim <- function(
 # , tol0_sd             = 0       ## Variation in tolerance among starting host strains (if > 1 host strain). Not yet used, but plan to
  , power_c              = 0.002   ## Power law tradeoff scaling
  , power_exp            = 3       ## Power law tradeoff exponent
+ , eff_hit              = 1       ## Size of the negative correlation between parasite alpha and efficiency evolution (only used if agg_eff_adjust == TRUE)
  , Imat                 = NULL    ## Setup within function in this version, don't adjust
  , eff_scale            = 50      ## Weighting of the matching of parasite tuning and aggressiveness
  , nt                   = 100000  ## Length of simulation (time steps)
  , rptfreq              = max(nt / 500, 1) ## How often the state of the system is saved
  , seed                 = NULL    ## Can set seed if desired
- , progress             = FALSE   ## Progress bar?
+ , progress             = "bar"   ## Progress bar?
  , debug                = FALSE   ## A debug option for stopping at various points in the sim. See code to check where.
  , debug2               = FALSE   ## A debug option for stopping at various points in the sim. See code to check where.
  , debug3               = FALSE   ## A debug option for stopping at various points in the sim. See code to check where.
@@ -601,7 +615,7 @@ run_sim <- function(
                   n    = length(c(state$Imat))
                 , size = c(state$Imat)
                   ## total host recovery based on some background probability + whatever the parasite is doing
-                , prob = c(state$alpha) + gamma0
+                , prob =  1 - (1 - c(state$alpha)) * (1 - gamma0)
                 , nrow = nrow(state$Imat)
                 , ncol = ncol(state$Imat))
 
@@ -648,6 +662,7 @@ run_sim <- function(
                     , power_exp       = power_exp
                     , mut_link_p      = mut_link_p
                     , agg_eff_adjust  = agg_eff_adjust
+                    , eff_hit         = eff_hit
                     , parasite_tuning = parasite_tuning
                     , tradeoff_only   = tradeoff_only
                       )
@@ -716,7 +731,15 @@ run_sim <- function(
         avg_beta     <- mean(state$beta)
         sd_beta      <- sd(state$beta)
 
-        if (progress) cat(".")
+        if (progress == "bar") {
+          cat(".")
+        } else if (progress == "text") {
+          if (((i / 50) %% 1) == 0) {
+          print(paste(round(i/nrpt, 2), "% Complete"))            
+          }
+        } else {
+          
+        }
         res[i,] <- c(
           i*rptfreq
         , num_S
@@ -749,7 +772,7 @@ run_sim <- function(
         }
 
     } ## loop over reporting frequencies
-    if (progress) cat("\n")
+   # if (progress) cat("\n")
     return(res)
 
     ## Run the deterministic model

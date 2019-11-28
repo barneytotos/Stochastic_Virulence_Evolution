@@ -73,12 +73,20 @@ source("res_tol_stochas_manual_setup.R")
 source("res_tol_determ_manual_setup.R")
 source("res_tol_ad_manual_setup.R")
 } else {
-source("vir_evo_stochas_manual_setup.R")   
+## This script now has lots of exploration and debugging stuff. Don't run through source() but it
+ ## does remain a useful script to look through
+# source("vir_evo_stochas_manual_setup.R")  
+ ## streamlined script for tradeoff only
+source("vir_evo_stochas_to_bulk.R")
+ ## streamlined script for efficiency model
+source("vir_evo_stochas_eff_bulk.R")   
 }
 
 ## Examine the results
+if (host_mort == TRUE) {
 source("stochastic_tidy.R")
 source("determ_tidy.R")
+}
 
 ## Can also just load previous results... Email me for thesis or poster "raw data" (sim results), too large for github 
 
@@ -89,7 +97,13 @@ source("determ_tidy.R")
 # (4) res_tol_plots_final.R
 
 ## Plot
+if (host_mort == TRUE) {
 source("res_tol_plots_final.R")
+} else {
+ ## Plot one model at a time
+tradeoff_only <- TRUE
+source("vir_evo_hypercube_plotting.R")
+}
 
  ## NOTE: ** res_tol_plots_final.R is pretty incomplete. Can probably step through this scipt, but I warn you (*whoever
   ## is finding this note*) that that plotting script is quite convoluted. Either work your way through it or do your
