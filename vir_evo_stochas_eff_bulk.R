@@ -56,7 +56,7 @@ deterministic <- FALSE
 num_points    <- 1500
 
 if (!file.exists("lhs_samps_eff.csv")) {
-lhs     <- randomLHS(6000, 8) 
+lhs     <- randomLHS(6000, 9) 
 write.csv(lhs, "lhs_samps_eff.csv")
 } else {
 lhs     <- read.csv("lhs_samps_eff.csv")
@@ -68,19 +68,19 @@ params        <- data.frame(
  , tradeoff_only       = FALSE
  , agg_eff_adjust      = TRUE
 ## for efficiency runs only add this as a hypercube sample
- , eff_hit             = qunif(lhs[, 8], min = 0.00, max = 1.00) # 0.5
+ , eff_hit             = qunif(lhs[, 1], min = 0.00, max = 1.00) # 0.5
  , num_points          = num_points
  , mut_var             = "beta"
- , mu                  = qunif(lhs[, 1], min = 0.001, max = 0.10) # 0.01 # 
+ , mu                  = qunif(lhs[, 2], min = 0.001, max = 0.10) # 0.01 # 
  , mut_mean            = 0
- , mut_sd              = qunif(lhs[, 2], min = 0.01, max = 0.30) # 0.1  # 
+ , mut_sd              = qunif(lhs[, 3], min = 0.01, max = 0.30) # 0.1  # 
 ## Ignored under conditions of no tuning
- , alpha0              = qunif(lhs[, 3], min = 0.01, max = 0.99) # 0.03 # 
- , tune0               = 0.30 # qunif(lhs, min = 0.01, max = 0.99) # 
- , power_c             = qunif(lhs[, 4], min = 0.005, max = 0.1) # 0.01 # 
- , power_exp           = qunif(lhs[, 5], min = 1.5, max = 5.5) # 3    # 
- , N                   = round(qunif(lhs[, 6], min = 100, max = 2500)) # 600  # 
- , gamma0              = qunif(lhs[, 7], min = 0.01, max = 0.4) # 0.2
+ , alpha0              = 0.03 # qunif(lhs[, 4], min = 0.01, max = 0.99) # 
+ , tune0               = 0.03 # qunif(lhs[, 5], min = 0.01, max = 0.99) # 
+ , power_c             = qunif(lhs[, 6], min = 0.005, max = 0.1) # 0.01 # 
+ , power_exp           = qunif(lhs[, 7], min = 1.5, max = 5.5) # 3    # 
+ , N                   = round(qunif(lhs[, 8], min = 100, max = 2500)) # 600  # 
+ , gamma0              = qunif(lhs[, 9], min = 0.01, max = 0.4) # 0.2
  , eff_scale           = 30
  , R0_init             = 2
  , deterministic       = deterministic
