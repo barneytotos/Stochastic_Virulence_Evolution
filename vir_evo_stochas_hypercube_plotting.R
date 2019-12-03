@@ -46,7 +46,9 @@ res_1000_all_s.a <- res_1000_all_s %>%
   summarize(
     first_equil    = mean(when_equil)
   , alpha.sd_after = mean(sd_alpha)
+  , alpha.dr.after = sd(mean_alpha)
   , beta.sd_after  = mean(sd_beta)
+  , beta.dr.after  = sd(mean_beta)
   , time_to_equil  = min(cum_time))
 
 res_1000_all_s.b <- res_1000_all_s %>%
@@ -54,11 +56,14 @@ res_1000_all_s.b <- res_1000_all_s %>%
   group_by(param_num) %>%
   summarize(
     alpha.sd_before = mean(sd_alpha)
-  , beta.sd_before = mean(sd_beta))
+  , alpha.dr.before = sd(mean_alpha)
+  , beta.sd_before = mean(sd_beta)
+  , beta.dr.before  = sd(mean_beta))
 
 ## Melt first to get the variables of interest with names and values and then add back parameter values
-res_1000_all_s.gg <- left_join(res_1000_all_s.a, res_1000_all_s.b)
-res_1000_all_s.gg <- res_1000_all_s.gg[, -2]
+res_1000_all_s.gg <- left_join(res_1000_all_s.a, res_1000_all_s.b, "param_num")
+## Have time to equilibrium so dont need first time sample (#) of equilibrium
+res_1000_all_s.gg <- res_1000_all_s.gg[, -grep("first_equil", names(res_1000_all_s.gg))]
 ## take log of first_equil then melt
 res_1000_all_s.gg <- transform(res_1000_all_s.gg, time_to_equil = log(time_to_equil))
 res_1000_all_s.gg <- melt(res_1000_all_s.gg, "param_num")
@@ -76,14 +81,34 @@ res_1000_all_s.gg        <- left_join(res_1000_all_s.gg, params.melt, by = "para
 names(res_1000_all_s.gg) <- c("param_num", "Out.Name", "Out.Value", "Param.Name", "Param.Value")
 res_1000_all_s.gg        <- as.data.frame(res_1000_all_s.gg)
 
-## add in a column to color by 
+## add in a column (one parameters) to color by 
 res_1000_all_s.gg <- left_join(res_1000_all_s.gg, params.s[, c(1, 2)], "param_num")
 
 ## remove the rows with NA where the chains get to equil before the first time point
 res_1000_all_s.gg <- res_1000_all_s.gg[complete.cases(res_1000_all_s.gg), ]
 
+library(viridis)
 ## gg pairs plotting of the hypercube results
-ggplot(res_1000_all_s.gg, aes(Param.Value, Out.Value)) +
+res_1000_all_s.gg2 <- res_1000_all_s.gg %>% 
+  filter(Param.Name != "alpha0")
+
+after.rows  <- grep("after", res_1000_all_s.gg2$Out.Name)
+before.rows <- grep("before", res_1000_all_s.gg2$Out.Name)
+
+res_1000_all_s.gg2.a <- res_1000_all_s.gg2[after.rows, ]
+res_1000_all_s.gg2.a <- droplevels(res_1000_all_s.gg2.a)
+
+res_1000_all_s.gg2.b <- res_1000_all_s.gg2[before.rows, ]
+res_1000_all_s.gg2.b <- droplevels(res_1000_all_s.gg2.b)
+
+ggplot(res_1000_all_s.gg2.a
+  , aes(Param.Value, Out.Value)) +
+    geom_point(aes(colour = mu)) +
+    facet_grid(Out.Name ~ Param.Name, scale = "free") +
+    scale_color_viridis() 
+
+ggplot(res_1000_all_s.gg2.b
+  , aes(Param.Value, Out.Value)) +
     geom_point(aes(colour = mu)) +
     facet_grid(Out.Name ~ Param.Name, scale = "free") +
     scale_color_viridis() 

@@ -2,6 +2,10 @@
 ### Hypercube runs for efficiency model (to in file name) ###
 #############################################################
 
+## Just a few notes that I have discovered after running for a while
+ ## 1) Saving the hypercube samples in the way that I did will retain the right parameters but will generate new 
+  ## (wrong) seeds in params (the correct seeds to recreate the answers are in res_1000_all)
+
 ######
 ## Set up parameter values to explore:
 ## 1) Time to equilibrium
@@ -53,17 +57,19 @@
 ## Set up the parameter values over which to sample
 num_runs      <- 1
 deterministic <- FALSE
-num_points    <- 1500
+## double the resolution to capture quick transients
+num_points    <- 3000
 
+## Generate way more than could possibly be needed
 if (!file.exists("lhs_samps_eff.csv")) {
-lhs     <- randomLHS(6000, 9) 
+lhs     <- randomLHS(100000, 10) 
 write.csv(lhs, "lhs_samps_eff.csv")
 } else {
 lhs     <- read.csv("lhs_samps_eff.csv")
 lhs     <- lhs[, -1]
 }
 
-params        <- data.frame(
+params.all  <- data.frame(
    parasite_tuning     = FALSE
  , tradeoff_only       = FALSE
  , agg_eff_adjust      = TRUE
@@ -72,19 +78,30 @@ params        <- data.frame(
  , num_points          = num_points
  , mut_var             = "beta"
  , mu                  = qunif(lhs[, 2], min = 0.001, max = 0.10) # 0.01 # 
- , mut_mean            = 0
- , mut_sd              = qunif(lhs[, 3], min = 0.01, max = 0.30) # 0.1  # 
+ , mut_mean            = qunif(lhs[, 3], min = -0.10, max = 0.0)
+ , mut_sd              = qunif(lhs[, 4], min = 0.01, max = 0.50) # 0.1  # 
 ## Ignored under conditions of no tuning
  , alpha0              = 0.03 # qunif(lhs[, 4], min = 0.01, max = 0.99) # 
  , tune0               = 0.03 # qunif(lhs[, 5], min = 0.01, max = 0.99) # 
- , power_c             = qunif(lhs[, 6], min = 0.005, max = 0.1) # 0.01 # 
- , power_exp           = qunif(lhs[, 7], min = 1.5, max = 5.5) # 3    # 
- , N                   = round(qunif(lhs[, 8], min = 100, max = 2500)) # 600  # 
- , gamma0              = qunif(lhs[, 9], min = 0.01, max = 0.4) # 0.2
+ , power_c             = qunif(lhs[, 5], min = 0.005, max = 0.1) # 0.01 # 
+ , power_exp           = qunif(lhs[, 6], min = 1.5, max = 5.5) # 3    # 
+ , N                   = round(qunif(lhs[, 7], min = 100, max = 2500)) # 600  # 
+ , gamma0              = qunif(lhs[, 8], min = 0.01, max = 0.4) # 0.2
  , eff_scale           = 30
  , R0_init             = 2
  , deterministic       = deterministic
 )
+
+### Run over batches of 1000 parameters until 2000 complete hypercube samples are generated or 100000 parameter
+ ## values are exhausted. If it is the later probably should just adjust the parameter space 
+num_complete <- 0
+j            <- 1
+
+while (num_complete < 2000 | j < 100) {
+  
+## record the batch 
+batch.rows <- (1000 * (j - 1) + 1):(1000 * (j - 1) + 1000)
+params     <- params.all[batch.rows, ]  
 
 ## duplicate these parameter values for each stochastic run 
 num_param <- nrow(params)
@@ -129,6 +146,9 @@ params[i, ]$opt_alpha <- with(params[i, ],
 )
 }
 
+## Finally, change starting alpha to be 5% of alpha star
+params <- params %>% mutate(alpha0 = opt_alpha * 0.05)
+
 for (i in 1:nrow(params)) {
   
   print(i / nrow(params))
@@ -137,7 +157,8 @@ for (i in 1:nrow(params)) {
     res_1000 <- try(
       with(params
         , run_sim(
-   debug4              = F
+   debug4              = T
+ , debug4_val          = 2
  , nt                  = nt[i]
  , rptfreq             = rptfreq[i]
  , mut_var             = mut_var[i]
@@ -175,6 +196,8 @@ for (i in 1:nrow(params)) {
       )))
   
   if (class(res_1000) != "try-error") {
+    
+  ## first check 
  
   ## clean up run i (add parameters and remove NA if the system went extinct)   
 res_1000 <- res_1000 %>% mutate(param_num = i, elapsed_time = time_check[3])  
@@ -189,11 +212,19 @@ res_1000_all <- rbind(res_1000_all, res_1000)
 
 }
 
-if ((i/50 %% 1) == 0) {
-  temp_nam <- paste(paste("res_1000_all_stochas_eff", format(Sys.time(), "%a_%b_%d_%Y"), sep = "_"), ".Rds", sep = "")
+  ## Save completed runs with all of the chopped runs in batches of 100 completed runs
+if (((num_complete/100) %% 1) == 0) {
+  Sys.sleep(1) ## For whatever reason struggles without this, no idea why
+  temp_nam <- paste(paste("batch_runs/res_1000_all_stochas_eff", paste(num_complete, format(Sys.time(), "%a_%b_%d_%Y"), sep = "_"), sep = "_"), ".Rds", sep = "")
   saveRDS(res_1000_all, temp_nam)
+  Sys.sleep(3)
 }
 
 }
 
+## Add to the batch counter
+j <- j + 1
 
+}
+
+# res_1000_all <- readRDS("Saved_Results/vir_evo_stochas_eff_Mon_Dec_02_2019.rds")

@@ -558,7 +558,7 @@ run_sim <- function(
 
      ## Added tracking host responses
     res <- as.data.frame(matrix(
-      NA, nrow = nrpt, ncol = 17
+      NA, nrow = nrpt, ncol = 20
     , dimnames = list(
       NULL
     , c("time"
@@ -578,7 +578,13 @@ run_sim <- function(
       , "upper_alpha"
       , "mean_beta"
       , "sd_beta"
+      , "total_mutations"
+      , "total_extinctions"
+      , "shannon"
       ))))
+    
+    mut_counter <- 0
+    num_extinct <- 0
 
     ## Run the stochastic version
     if (deterministic == FALSE) {
@@ -629,7 +635,9 @@ run_sim <- function(
                 ## debug to force mutation to check if that is working
                 if (debug3 == TRUE) { 
                   mutated[1, 1] <- 2
-                  }
+                }
+                
+                mut_counter <- mut_counter + sum(mutated)
 
                 stopifnot(length(recover) == length(mutated))
                 stopifnot(length(newinf)  == length(state$Imat))
@@ -692,10 +700,11 @@ run_sim <- function(
                 }
 
                 ## Look over columns of I for extinct parasites and over rows of I and entries of S for extinct hosts
-                extinct_p <- which(colSums(state$Imat) == 0)
-#                extinct_h <- which(rowSums(state$Imat) == 0 & state$Svec == 0)
+                extinct_p   <- which(colSums(state$Imat) == 0)
+                num_extinct <- num_extinct + length(extinct_p)
+#               extinct_h   <- which(rowSums(state$Imat) == 0 & state$Svec == 0)
                 if (length(extinct_p) > 0) {
-                    state <- do_extinct(state, mut_var, extinct = extinct_p, parasite = TRUE)
+                    state   <- do_extinct(state, mut_var, extinct = extinct_p, parasite = TRUE)
                 }
                 dfun("after mutation")
 
@@ -724,6 +733,7 @@ run_sim <- function(
 #        lhtol_mean   <- sum(state$Svec*state$httraitvec)/num_S
 #        lhtol_sd     <- sqrt(sum(state$Svec*(state$httraitvec-lhtol_mean)^2)/num_S)
         pop_size     <- num_I + num_S
+        shann        <- diversity(state$Imat, index = "shannon", MARGIN = 1, base = exp(1))
 
         ## actual alpha and beta of all parasites in all host classes
         avg_alpha    <- mean(state$alpha)
@@ -735,7 +745,7 @@ run_sim <- function(
           cat(".")
         } else if (progress == "text") {
           if (((i / 50) %% 1) == 0) {
-          print(paste(round(i/nrpt, 2), "% Complete"))            
+          print(paste(round(i/nrpt, 2)*100, "% Complete"))            
           }
         } else {
           
@@ -763,6 +773,9 @@ run_sim <- function(
         , avg_beta
         , sd_beta
      #   , ifelse(mut_var == "beta", state$gamma[1,1], state$gamma[1,1])
+        , mut_counter
+        , num_extinct
+        , shann
           )
 
         ## DRY ...
