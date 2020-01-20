@@ -382,6 +382,13 @@ power_R0_grad  <- function (alpha, c, curv, gamma, N, eps) {
 ######
 ## Top level sim function (wrapper)
 ######
+
+##' @param deterministic
+##' @param mut_type 
+##' @param mut_var 
+##' @param Imat 
+##' @param eff_scale 
+##' @param progress 
 run_sim <- function(
     ## These first parameters are all about what type of simulation to run
      ## Note: hosts are always set to evolve. Crudely can force them never to evolve by just setting the probability to effectively 0
@@ -467,7 +474,7 @@ run_sim <- function(
       }
 
     ## If deterministic == TRUE, set up the full array of possible strains from the start (for diffusion via mutation)
-    if (deterministic == FALSE) {
+    if (!deterministic) {
 
    ## Based on my new setup it seems better to directly calculate efficiency and starting beta as a function of defined tuning
     ## and aggressiveness starting values instead of going backwards from R0
@@ -515,7 +522,7 @@ run_sim <- function(
      ## how a parasite is evolving. 
     ## Set up this way so that the rest of the code relies upon the same structure, and all the knobs can use the
      ## same code with fewer modifications (does increase confusion at places I suppose)
-    if (parasite_tuning == TRUE | (parasite_tuning == FALSE & tradeoff_only == FALSE)) {
+    if (parasite_tuning || (!parasite_tuning && !tradeoff_only)) {
       if (deterministic == FALSE) {
       ltraitvec  <- mut_link_p$linkfun(startvals$tuning)     
       } else {
@@ -526,7 +533,7 @@ run_sim <- function(
     }
 
     ## Alpha (intrinsic parasite mortality pressure)
-    if (deterministic == FALSE) {
+    if (!deterministic) {
     palphavec  <- mut_link_p$linkfun(alpha0)
     } else {
     palphavec  <- alpha0 
