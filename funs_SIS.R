@@ -13,14 +13,14 @@
 ## (1) Just alpha and gamma evolving
 ## (2) If you choose tradeoff_only == TRUE, ltrait doesn't mean anything, beta is what is important.
  ## However the summary stuff at the each trait matrix storing step isn't currently set up to handle this
-  ## correctly. Need to calculate instrinsic beta from the tradeoff curve (especially if host evolution
+  ## correctly. Need to calculate intrinsic beta from the tradeoff curve (especially if host evolution
    ## is happening and/or if non 0 resistance and tolerance are used)
 ## (3) Don't give more than one host or pathogen genotype as starting values, this is hypothetically coded
  ## but will currently run into problems establishing starting conditions. 
-## (4) Host resistance and tolerance avialable as parameters, and can also be set to evolve, but are best set to
+## (4) Host resistance and tolerance available as parameters, and can also be set to evolve, but are best set to
  ## some constant value (all results in the thesis chapter in this repo and the poster are with 0 resistance
  ## and 0 tolerance) as they currently evolve without constraint, leading to uninteresting results and possibly error
-## (5) Stochastic vs Determinisitc option should porbably be separated. Works, but the top level sim
+## (5) Stochastic vs Deterministic option should probably be separated. Works, but the top level sim
  ## function is a bit too long for my liking at present 
 
 ######
@@ -33,7 +33,7 @@ get_mut_p        <- function (orig_trait, mut_var, power_c, power_exp, mut_link_
 
       ## Assume a neutrally evolving aggressiveness, regardless of method of calculating efficiency
        ## recall I call virulence the parasite's "negative" trait (negative trait could also be host
-       ## recover, but that isn't prepped yet)
+       ## recovery, but that isn't prepped yet)
      if (parasite_tuning == TRUE) {
        neg_trait_adj <- rnorm(length(orig_trait$neg_trait), 0, mut_sd)
        new_trait_neg <- orig_trait$neg_trait + neg_trait_adj
@@ -55,7 +55,7 @@ get_mut_p        <- function (orig_trait, mut_var, power_c, power_exp, mut_link_
    ## (1.2) agg_eff_adjust == FALSE: Independent evolution of efficiency
   ## (2) Evolve in tuning, which is used to calculate efficiency. In this formulation change in aggressiveness always 
     ## lowers parasite efficiency indirectly, regardless of direction, because of a poorer match to tuning.
-    ## For now assume independetly evolving tuning
+    ## For now assume independently evolving tuning
 
     if (parasite_tuning == FALSE) {
 
@@ -120,7 +120,7 @@ update_mut_pt    <- function (state, orig_trait, power_c, power_exp, mut_link_p,
    new_par_beta <- scale_beta_alpha(state, power_c, power_exp, mut_link_p, ...)
 
    ## Resistance will act to decrease parasite transmission and virulence following the shape of the tradeoff curve
-     ## Need to think criticall about what scale this should be conducted on. Both logit and probability scale feel like
+     ## Need to think critically about what scale this should be conducted on. Both logit and probability scale feel like
       ## they each have problems
    ## First calculate a tradeoff curve with the same curvature that passes through the parasite's (alpha, beta)
    cvec         <- pt_calc_c(beta = new_par_beta, alpha = mut_link_p$linkinv(state$palphavec), curv = power_exp)
@@ -160,7 +160,7 @@ do_extinct       <- function (state, mut_var, extinct, parasite) {
 
     return(state)
 }
-## This function is borderline hideous but it does what I want it to do (mutlinomial draws and return proper
+## This function is borderline hideous but it does what I want it to do (multinomial draws and return proper
  ## matrix structure). All ears for a better way to write this
 get_inf          <- function (Svec, uninf, Imat, beta) {
 
@@ -245,7 +245,7 @@ return(list(
   ))
 
 }
-## Determinisitc version for calculating start vals
+## Deterministic version for calculating start vals
 calc_startvals_determ <- function (alpha0, tuning, N, power_c, power_exp, mut_link_p, eff_scale) {
 
 ## No resistance in SIS, but leaving structure for now...
@@ -384,15 +384,15 @@ power_R0_grad  <- function (alpha, c, curv, gamma, N, eps) {
 ######
 run_sim <- function(
     ## These first parameters are all about what type of simulation to run
-     ## Note: hosts are always set to evolve. Crudly can force them never to evolve by just setting the probability to effectively 0
+     ## Note: hosts are always set to evolve. Crudely can force them never to evolve by just setting the probability to effectively 0
    deterministic        = FALSE   ## Run an advection diffusion version?
  , parasite_tuning      = TRUE    ## Reformulation where parasite efficiency is defined as matching tuning and aggressiveness
  , tradeoff_only        = FALSE   ## Stepping back to ignore tuning. Parasite just evolving according to the tradeoff curve
  , agg_eff_adjust       = FALSE   ## For efficiency model but not tuning model. Does an increase in parasite aggressiveness decrease efficiency (as a cost)
-    ## These next parametes all control how the simulation is run
+    ## These next parameters all control how the simulation is run
  , R0_init              = 2       ## >1, not actually used for tuning model
  , alpha0               = 0.03    ## Intrinsic parasite mortality probability (without influence of hosts). Default to main thesis result start
- , tune0                = 0.97    ## Strating tuning. Give a value, but only used if parasite_tuning == TRUE. Default to main thesis result start
+ , tune0                = 0.97    ## Starting tuning. Give a value, but only used if parasite_tuning == TRUE. Default to main thesis result start
  , gamma0               = 0.2     ## Background host recovery (immune pressure or however you want to think of it)
  , N                    = 200     ## Host population size, integer > 0
  , mu                   = 0.01    ## Mutation probability, > 0
@@ -593,7 +593,7 @@ run_sim <- function(
 
             for (j in 1:rptfreq) {
 
-               ## Debug code chunck that can be cut and paste to wherever there is a problem
+               ## Debug code chunk that can be cut and paste to wherever there is a problem
                 ## Fill i and j in manually after checking output after an error is encountered
                 if (debug2 == TRUE) {
                   print(paste(i, j, sep = "  -  "))
@@ -651,7 +651,7 @@ run_sim <- function(
                 ## [Step 4.4]: Find new phenotypes for mutated parasites and hosts.
                 tot_mut <- sum(mutated)
 
-                ## Original parasite taits that mutants arise from. Need this for later
+                ## Original parasite traits that mutants arise from. Need this for later
                 orig_trait <- list(
                    pos_trait = rep(state$ltraitvec, colSums(mutated))
                  , neg_trait = rep(state$palphavec, colSums(mutated))
@@ -679,7 +679,7 @@ run_sim <- function(
                 ## [Step 5]: Update Svec with infections and recoveries prior to the mutations
                 state$Svec <- state$Svec + rowSums(recover) - rowSums(newinf) 
 
-                ## [Step 6]: Update state (a big component beign parasite alpha and beta) with new parasite and host evolution.
+                ## [Step 6]: Update state (a big component being parasite alpha and beta) with new parasite and host evolution.
                 if (tot_mut > 0) {
                 state <- update_mut_pt(
                     state           = state
