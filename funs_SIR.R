@@ -1,5 +1,5 @@
 #######
-## SIS model with host death as well as host reproduction. Top level simulation function as well as all helper
+## SIS model with vital dynamics (host death as well as host reproduction). Top level simulation function as well as all helper
 ## functions are contained in this script. 
 ## For extensions on the simplest model and other code originally written by BMB email Ben Bolker for access
 #######

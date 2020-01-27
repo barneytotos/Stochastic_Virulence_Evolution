@@ -1,5 +1,5 @@
 #######
-## SIS model with no host demographics. Tradeoff involves just transmission and recovery. No mortality.
+## SIS model with no host demographics. Tradeoff involves just transmission and recovery/clearance. No mortality.
 ## Top level simulation function as well as all helper functions are contained in this script. 
 ## For extensions on the simplest model and other code originally written by BMB email Ben Bolker for access
 #######
@@ -107,12 +107,14 @@ get_mut_p        <- function (orig_trait, mut_var, power_c, power_exp, mut_link_
         return(list(new_trait_pos = new_trait_pos, new_trait_neg = new_trait_neg))
     } else stop("unknown mut_type")
 }
+
 do_mut           <- function (state, mut_var, orig_trait, ...) {
     new_trait        <- get_mut_p(orig_trait, mut_var, ...)
     state$ltraitvec  <- c(state$ltraitvec, new_trait$new_trait_pos)
     state$palphavec  <- c(state$palphavec, new_trait$new_trait_neg)
     return(state)
 }
+
 ## Update mutant strain's trait values using power-law tradeoff. 
 update_mut_pt    <- function (state, orig_trait, power_c, power_exp, mut_link_p, mutated, mutated_host, mut_var, ...) {
 
@@ -295,7 +297,13 @@ return(list(
   ))
 
 }
-## Wrappers for selecting random numbers from matrices and returning a matrix
+##' Select binomial random deviates, return a matrix with appropriate dimensions
+##' @param n total number of deviates
+##' @param size binomial N
+##' @param prob binomial probability
+##' @param nrow number of rows
+##' @param ncol number of cols
+## FIXME set default to ncol=1 ? eliminate nrow since determined by ncol? can we use dim(n) if it exists?
 rbinom_mat  <- function (n, size, prob, nrow, ncol) {
   matrix(rbinom(n, size, prob), nrow = nrow, ncol = ncol)
 }
@@ -597,12 +605,11 @@ run_sim <- function(
     if (deterministic == FALSE) {
 
     for (i in 1:nrpt) {
-
             for (j in 1:rptfreq) {
 
                ## Debug code chunk that can be cut and paste to wherever there is a problem
                 ## Fill i and j in manually after checking output after an error is encountered
-                if (debug2 == TRUE) {
+                if (debug2) {
                   print(paste(i, j, sep = "  -  "))
                   print(str(state$Svec))
                   assign("state_check", state, .GlobalEnv)
@@ -611,16 +618,20 @@ run_sim <- function(
 
                 ## [Step 1]: Infection.
                 ## Prob of escaping infection completely
-                uninf      <- rbinom_mat(
-                  n    = length(state$Svec)
-                , size = state$Svec
-                , prob = prod((1-state$beta)^state$Imat)
-                , nrow = nrow(state$Svec)
-                , ncol = ncol(state$Svec))
+                uninf      <- with(state,
+                       rbinom_mat(
+                  n    = length(Svec)
+                , size = Svec
+                , prob = prod((1-beta)^Imat)
+                , nrow = nrow(Svec)
+                , ncol = ncol(Svec))
+                )
                 
-                ## Division of new infectives among strains
-                 ## 'prob' is internally normalized
+                ## Division of new infections among strains
+                ## 'prob' is internally normalized
                 newinf     <- get_inf(state$Svec, uninf, state$Imat, beta = state$beta)
+
+                ## sanity check
                 stopifnot(sum(rowSums(newinf) + uninf) == sum(state$Svec))
 
                 ## [Step 2]: Recovery of I.
@@ -628,24 +639,29 @@ run_sim <- function(
                   n    = length(c(state$Imat))
                 , size = c(state$Imat)
                   ## total host recovery based on some background probability + whatever the parasite is doing
+                  ## BMB: further explanation?
                 , prob =  1 - (1 - c(state$alpha)) * (1 - gamma0)
                 , nrow = nrow(state$Imat)
                 , ncol = ncol(state$Imat))
 
+                ## BMB what happened to step 3?
+                
                 ## [Step 4.1]: Mutation of new infections. Fraction of new infections -> mutation
-               if (sum(newinf) != 0) {
-                  mutated  <- rbinom_mat(n = newinf, size = newinf, prob = mu, nrow = nrow(newinf), ncol = ncol(newinf))
+               if (sum(newinf) > 0) {
+                   mutated  <- rbinom_mat(n = newinf, size = newinf, prob = mu, nrow = nrow(newinf), ncol = ncol(newinf))
                } else {
-                  mutated  <- rbinom_mat(n = nrow(newinf), size = newinf, prob = mu, nrow = nrow(newinf), ncol = ncol(newinf))
+                   ## BMB: what are we doing if there are no new infections?
+                   mutated  <- rbinom_mat(n = nrow(newinf), size = newinf, prob = mu, nrow = nrow(newinf), ncol = ncol(newinf))
                }
 
                 ## debug to force mutation to check if that is working
-                if (debug3 == TRUE) { 
+                if (debug3) { 
                   mutated[1, 1] <- 2
                 }
                 
                 mut_counter <- mut_counter + sum(mutated)
 
+                ## sanity checks
                 stopifnot(length(recover) == length(mutated))
                 stopifnot(length(newinf)  == length(state$Imat))
 
