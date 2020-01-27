@@ -13,6 +13,7 @@ needed_packages <- c(
 , "gganimate"
 , "reshape2"
 , "lhs"
+, "vegan"
   )
 
 ## Check if the packages are installed. If they are not install them, then load them

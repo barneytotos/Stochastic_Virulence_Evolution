@@ -15,3 +15,9 @@ To run code, open `top_level_script.R` and work from there. Note: the code conta
 4. Host resistance and tolerance is included but if set to evolve, evolves without constraint to infinite resistance and tolerance.
 
 
+## Questions/TODO
+
+* does running a 'tradeoff-only' model with a power-law curve with 'power_c' (multiplier) == 1, 'power_exp' ==0  and gamma0==0 give us a 'nearly neutral' (i.e. selection, mutation, and drift in beta with no tradeoff) model??
+     * almost, but starting value calculation screws us up. Will have to work around this.
+* can we combine get_mut and get_mut_p without breaking anything? is there a good reason not to?
+* refactoring: rename things you meant to rename?

@@ -60,6 +60,7 @@ if (host_mort) {
 if (host_mort) {
     source("res_tol_sim.R")
 } else {
+    ## single run
     source("vir_evo_sim.R")
 }
   

@@ -3,7 +3,7 @@
 ###################################
 
 nt            <- 1e5
-num_points    <- 600
+num_points    <- 600 
 rptfreq       <- max(nt / num_points, 1) 
 num_runs      <- 5
 deterministic <- FALSE ## run the model via reaction-diffusion deterministic?
