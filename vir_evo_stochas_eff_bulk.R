@@ -70,9 +70,9 @@ lhs     <- lhs[, -1]
 }
 
 params.all  <- data.frame(
-   parasite_tuning     = FALSE
+   parasite_tuning     = TRUE
  , tradeoff_only       = FALSE
- , agg_eff_adjust      = TRUE
+ , agg_eff_adjust      = FALSE
 ## for efficiency runs only add this as a hypercube sample
  , eff_hit             = qunif(lhs[, 1], min = 0.00, max = 1.00) # 0.5
  , num_points          = num_points
@@ -83,7 +83,7 @@ params.all  <- data.frame(
 ## Ignored under conditions of no tuning
  , alpha0              = 0.03 # qunif(lhs[, 4], min = 0.01, max = 0.99) # 
  , tune0               = 0.03 # qunif(lhs[, 5], min = 0.01, max = 0.99) # 
- , power_c             = qunif(lhs[, 5], min = 0.005, max = 0.1) # 0.01 # 
+ , power_c             = qunif(lhs[, 5], min = 0.0005, max = 0.001) # 0.01 # 
  , power_exp           = qunif(lhs[, 6], min = 1.5, max = 5.5) # 3    # 
  , N                   = round(qunif(lhs[, 7], min = 100, max = 2500)) # 600  # 
  , gamma0              = qunif(lhs[, 8], min = 0.01, max = 0.4) # 0.2
@@ -97,7 +97,7 @@ params.all  <- data.frame(
 num_complete <- 0
 j            <- 1
 
-while (num_complete < 2000 | j < 100) {
+while (num_complete < 1000 | j < 100) {
   
 ## record the batch 
 batch.rows <- (1000 * (j - 1) + 1):(1000 * (j - 1) + 1000)
@@ -157,8 +157,8 @@ for (i in 1:nrow(params)) {
     res_1000 <- try(
       with(params
         , run_sim(
-   debug4              = T
- , debug4_val          = 2
+   debug4              = F
+ , debug4_val          = 20
  , nt                  = nt[i]
  , rptfreq             = rptfreq[i]
  , mut_var             = mut_var[i]
@@ -217,7 +217,7 @@ if (((num_complete/100) %% 1) == 0) {
   Sys.sleep(1) ## For whatever reason struggles without this, no idea why
   temp_nam <- paste(paste("batch_runs/res_1000_all_stochas_eff", paste(num_complete, format(Sys.time(), "%a_%b_%d_%Y"), sep = "_"), sep = "_"), ".Rds", sep = "")
   saveRDS(res_1000_all, temp_nam)
-  Sys.sleep(3)
+  Sys.sleep(1)
 }
 
 }

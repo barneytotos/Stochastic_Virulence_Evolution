@@ -31,7 +31,7 @@ for (i in 1:nrow(params)) {
  , debug               = FALSE
  , debug2              = FALSE
  , debug3              = FALSE
- , debug4              = TRUE
+ , debug4              = FALSE
  , debug4_val          = 20
  , progress            = TRUE
  , deterministic       = deterministic[i]

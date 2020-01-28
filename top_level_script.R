@@ -76,6 +76,7 @@ source("res_tol_ad_manual_setup.R")
 ## This script now has lots of exploration and debugging stuff. Don't run through source() but it
  ## does remain a useful script to look through
 # source("vir_evo_stochas_manual_setup.R")  
+   
  ## streamlined script for tradeoff only
 source("vir_evo_stochas_to_bulk.R")
  ## streamlined script for efficiency model
@@ -101,7 +102,7 @@ if (host_mort == TRUE) {
 source("res_tol_plots_final.R")
 } else {
  ## Plot one model at a time
-tradeoff_only <- TRUE
+tradeoff_only <- FALSE
 source("vir_evo_hypercube_plotting.R")
 }
 
