@@ -104,10 +104,40 @@ get_mut_p        <- function (orig_trait, mut_var, power_c, power_exp, mut_link_
 ##' @param state current system state
 ##' @param mut_var variable under mutation ("beta" or otherwise)
 ##' @param orig_trait vector of original trait values
-do_mut           <- function (state, mut_var, orig_trait, ...) {
-    new_trait        <- get_mut_p(orig_trait, mut_var, ...)
+do_mut           <- function (state, mut_var, orig_trait, power_c, power_exp, mut_link_p, mutated, parasite_tuning, tradeoff_only, eff_scale, ...) {
+  
+    ## Goal here will be to always run these first lines, then have the output finished if(neutral)
+  
+    ## !! I clearly don't understand something about these nested function calls, why tradeoff_only now isn't found, without = tradeoff_only or why my , ... started to break
+    new_trait        <- get_mut_p(orig_trait, mut_var, power_c, power_exp, mut_link_p, tradeoff_only = tradeoff_only, parasite_tuning = parasite_tuning, ...)
     state$ltraitvec  <- c(state$ltraitvec, new_trait$new_trait_pos)
     state$palphavec  <- c(state$palphavec, new_trait$new_trait_neg)
+    
+    ## if (!neutral) { }
+    
+    state <- update_mut_pt(
+                    state           = state
+                  , orig_trait      = orig_trait
+                  , power_c         = power_c
+                  , power_exp       = power_exp
+                  , mut_link_p      = mut_link_p
+                  , mutated         = mutated
+                  , mut_var         = mut_var
+                  , parasite_tuning = parasite_tuning
+                  , tradeoff_only   = tradeoff_only
+                  , eff_scale       = eff_scale)
+    
+    ## Update Infected matrix with the new strain, maintaining which S class received that mutation.
+    ## For each mutated strain, Imat gets a new column with a single 1, in the row in which the mutation occurred
+    if (sum(mutated) > 0) {
+        ## First make a matrix of 0s, then add a single one in each column corresponding to the row of the host that the parasite mutated in
+        new_mutes            <- matrix(data = 0, nrow = nrow(state$Imat), ncol = sum(mutated))
+        num_mutes            <- matrix(c(rep(which(rowSums(mutated) > 0), rowSums(mutated)[rowSums(mutated) != 0])
+                                       , 1:sum(mutated)), ncol = 2, nrow = sum(mutated))
+        new_mutes[num_mutes] <- 1
+        state$Imat           <- cbind(state$Imat, new_mutes)
+    }
+    
     return(state)
 }
 
@@ -133,21 +163,14 @@ update_mut_pt    <- function (state, orig_trait, power_c, power_exp, mut_link_p,
 
     state$alpha  <- new_alphas
     state$beta   <- new_betas
-
-    ## Update Infected matrix with the new strain, maintaining which S class received that mutation.
-    ## For each mutated strain, Imat gets a new column with a single 1, in the row in which the mutation occurred
-    if (sum(mutated) > 0) {
-        ## First make a matrix of 0s, then add a single one in each column corresponding to the row of the host that the parasite mutated in
-        new_mutes            <- matrix(data = 0, nrow = nrow(state$Imat), ncol = sum(mutated))
-        num_mutes            <- matrix(c(rep(which(rowSums(mutated) > 0), rowSums(mutated)[rowSums(mutated) != 0])
-                                       , 1:sum(mutated)), ncol = 2, nrow = sum(mutated))
-        new_mutes[num_mutes] <- 1
-        state$Imat           <- cbind(state$Imat, new_mutes)
-    }
+    
+    ## !! Placeholder for now because I realized $ltraitvec never gets updated if tradeoff_only == TRUE (it isn't used)
+     ## in any way, but it should be updated because it is returned in the output without warning. Will want to put this
+      ## in a better spot, but want it down for now
+    state$ltraitvec <- mut_link_p$linkfun(state$beta)
 
    return(state)
 }
-
 
 ##' Remove extinct strains
 do_extinct       <- function (state, mut_var, extinct, parasite) {
@@ -397,9 +420,11 @@ power_R0_grad  <- function (alpha, c, curv, gamma, N, eps) {
 ##' @param eff_scale 
 ##' @param progress 
 run_sim <- function(
+   nearly_neutral       = TRUE
+ , beta0                = 0.05 
     ## These first parameters are all about what type of simulation to run
      ## Note: hosts are always set to evolve. Crudely can force them never to evolve by just setting the probability to effectively 0
-   deterministic        = FALSE   ## Run an advection diffusion version?
+ , deterministic        = FALSE   ## Run an advection diffusion version?
  , parasite_tuning      = TRUE    ## Reformulation where parasite efficiency is defined as matching tuning and aggressiveness
  , tradeoff_only        = FALSE   ## Stepping back to ignore tuning. Parasite just evolving according to the tradeoff curve
  , agg_eff_adjust       = FALSE   ## For efficiency model but not tuning model. Does an increase in parasite aggressiveness decrease efficiency (as a cost)
@@ -570,8 +595,7 @@ run_sim <- function(
 #    , httraitvec = httraitvec
     , Imat       = Imat
     , Svec       = Svec)
-
-
+    
     dfun("init")
 
     nrpt <- nt %/% rptfreq
@@ -650,9 +674,12 @@ run_sim <- function(
                 , nrow = nrow(state$Imat)
                 , ncol = ncol(state$Imat))
 
-                ## [Step 3: host mortality]
+                ## [Step 3: host mortality] See "funs_SIR.R"
                 
-                ## [Step 4.1]: Mutation of new infections. Fraction of new infections -> mutation
+                ## [Step 4]: Update Svec with infections and recoveries (mutations are set asside)
+                state$Svec <- state$Svec + rowSums(recover) - rowSums(newinf) 
+                
+                ## [Step 5.1]: Mutation of new infections. Fraction of new infections -> mutation
                if (sum(newinf) > 0) {
                    mutated  <- rbinom_mat(n = newinf, size = newinf, prob = mu, nrow = nrow(newinf), ncol = ncol(newinf))
                } else {
@@ -670,13 +697,13 @@ run_sim <- function(
                 stopifnot(length(recover) == length(mutated))
                 stopifnot(length(newinf)  == length(state$Imat))
 
-                ## [Step 4.3]: Update Infecteds
+                ## [Step 5.2]: Update Infecteds
                 state$Imat <- state$Imat - recover + newinf - mutated
 
                 dfun("before mutation")
                 if (debug) print(mutated)
 
-                ## [Step 4.4]: Find new phenotypes for mutated parasites and hosts.
+                ## [Step 5.3]: Find new phenotypes for mutated parasites and hosts.
                 tot_mut <- sum(mutated)
 
                 ## Original parasite traits that mutants arise from. Need this for later
@@ -685,7 +712,7 @@ run_sim <- function(
                  , neg_trait = rep(state$palphavec, colSums(mutated))
                   )
 
-                ## Mut parasite first. Another choice of order that may/may not matter
+                ## [Step 6] Mut parasite, and update state
                 if (tot_mut > 0) {
                     state <- do_mut(
                       state
@@ -701,25 +728,9 @@ run_sim <- function(
                     , eff_hit         = eff_hit
                     , parasite_tuning = parasite_tuning
                     , tradeoff_only   = tradeoff_only
+                    , mutated         = mutated
+                    , eff_scale       = eff_scale
                       )
-                }
-
-                ## [Step 5]: Update Svec with infections and recoveries prior to the mutations
-                state$Svec <- state$Svec + rowSums(recover) - rowSums(newinf) 
-
-                ## [Step 6]: Update state (a big component being parasite alpha and beta) with new parasite and host evolution.
-                if (tot_mut > 0) {
-                state <- update_mut_pt(
-                    state           = state
-                  , orig_trait      = orig_trait
-                  , power_c         = power_c
-                  , power_exp       = power_exp
-                  , mut_link_p      = mut_link_p
-                  , mutated         = mutated
-                  , mut_var         = mut_var
-                  , parasite_tuning = parasite_tuning
-                  , tradeoff_only   = tradeoff_only
-                  , eff_scale       = eff_scale)
                 }
 
                 if (sum(state$Imat)==0) {
