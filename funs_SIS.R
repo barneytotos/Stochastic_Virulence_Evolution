@@ -1,5 +1,5 @@
 #######
-## SIS model with no host demographics. Tradeoff involves just transmission and recovery. No mortality.
+## SIS model with no host demographics. Tradeoff involves just transmission and recovery/clearance. No mortality.
 ## Top level simulation function as well as all helper functions are contained in this script. 
 ## For extensions on the simplest model and other code originally written by BMB email Ben Bolker for access
 #######
@@ -13,19 +13,20 @@
 ## (1) Just alpha and gamma evolving
 ## (2) If you choose tradeoff_only == TRUE, ltrait doesn't mean anything, beta is what is important.
  ## However the summary stuff at the each trait matrix storing step isn't currently set up to handle this
-  ## correctly. Need to calculate instrinsic beta from the tradeoff curve (especially if host evolution
+  ## correctly. Need to calculate intrinsic beta from the tradeoff curve (especially if host evolution
    ## is happening and/or if non 0 resistance and tolerance are used)
 ## (3) Don't give more than one host or pathogen genotype as starting values, this is hypothetically coded
  ## but will currently run into problems establishing starting conditions. 
-## (4) Host resistance and tolerance avialable as parameters, and can also be set to evolve, but are best set to
+## (4) Host resistance and tolerance available as parameters, and can also be set to evolve, but are best set to
  ## some constant value (all results in the thesis chapter in this repo and the poster are with 0 resistance
  ## and 0 tolerance) as they currently evolve without constraint, leading to uninteresting results and possibly error
-## (5) Stochastic vs Determinisitc option should porbably be separated. Works, but the top level sim
+## (5) Stochastic vs Deterministic option should probably be separated. Works, but the top level sim
  ## function is a bit too long for my liking at present 
 
 ######
 ## Accessory Functions
 ######
+
 get_mut_p        <- function (orig_trait, mut_var, power_c, power_exp, mut_link_p, mut_mean
   , mut_sd, mut_type = "shift", agg_eff_adjust, eff_hit, parasite_tuning, tradeoff_only) {
 
@@ -33,8 +34,8 @@ get_mut_p        <- function (orig_trait, mut_var, power_c, power_exp, mut_link_
 
       ## Assume a neutrally evolving aggressiveness, regardless of method of calculating efficiency
        ## recall I call virulence the parasite's "negative" trait (negative trait could also be host
-       ## recover, but that isn't prepped yet)
-     if (parasite_tuning == TRUE) {
+       ## recovery, but that isn't prepped yet)
+     if (parasite_tuning) {
        neg_trait_adj <- rnorm(length(orig_trait$neg_trait), 0, mut_sd)
        new_trait_neg <- orig_trait$neg_trait + neg_trait_adj
      } else {
@@ -47,55 +48,46 @@ get_mut_p        <- function (orig_trait, mut_var, power_c, power_exp, mut_link_
        new_trait_neg <- orig_trait$neg_trait + neg_trait_adj       
      }
 
-## Three options for the evolution of the parasite's "positive" trait
-## *NOTE*: Positive trait means different things depending on the model.
- ## In the tradeoff curve model and the tuning == FALSE model it is beta, in tuning == TRUE model it is tuning
-  ## (1) Evolve efficiency directly. Here assume biased efficiency mutations (requires parasite_tuning == FALSE)
-   ## (1.1) agg_eff_adjust == TRUE: With a direct adjustment to efficiency due to the evolution of aggressiveness above
-   ## (1.2) agg_eff_adjust == FALSE: Independent evolution of efficiency
-  ## (2) Evolve in tuning, which is used to calculate efficiency. In this formulation change in aggressiveness always 
-    ## lowers parasite efficiency indirectly, regardless of direction, because of a poorer match to tuning.
-    ## For now assume independetly evolving tuning
+       ## Three options for the evolution of the parasite's "positive" trait
+       ## *NOTE*: Positive trait means different things depending on the model.
+       ## In the tradeoff curve model and the tuning == FALSE model it is beta, in tuning == TRUE model it is tuning
+       ## (1) Evolve efficiency directly. Here assume biased efficiency mutations (requires parasite_tuning == FALSE)
+       ## (1.1) agg_eff_adjust == TRUE: With a direct adjustment to efficiency due to the evolution of aggressiveness above
+       ## (1.2) agg_eff_adjust == FALSE: Independent evolution of efficiency
+       ## (2) Evolve in tuning, which is used to calculate efficiency. In this formulation change in aggressiveness always 
+       ## lowers parasite efficiency indirectly, regardless of direction, because of a poorer match to tuning.
+       ## For now assume independently evolving tuning
 
-    if (parasite_tuning == FALSE) {
+       if (!parasite_tuning) {
 
-    ## tradeoff_only controls whether parasites evolve only with a tradeoff curve and none of the efficiency stuff
-      if (tradeoff_only == FALSE) {
-           
-        if (agg_eff_adjust == TRUE) {
+           ## tradeoff_only controls whether parasites evolve only with a tradeoff curve and none of the efficiency stuff
+           if (!tradeoff_only) {
+               if (agg_eff_adjust) {
 
-      new_trait_pos <- orig_trait$pos_trait - abs(neg_trait_adj) * eff_hit
-
-          ## Assume a negatively evolving efficiency
-        new_trait_pos <- new_trait_pos +
-            rnorm(length(new_trait_pos),
-              ifelse(mut_var == "beta",  ## Beta and gamma in opposite directions
-               mut_mean
-            ,  mut_mean*-1)
-            , mut_sd
-              )
-
-       } else {
-
-         new_trait_pos <- orig_trait$pos_trait +
-            rnorm(length(orig_trait$pos_trait),
-              ifelse(mut_var == "beta",  ## Beta and gamma in opposite directions
-               mut_mean
-            ,  mut_mean*-1)
-            , mut_sd)
-
-       }
-
+                   new_trait_pos <- orig_trait$pos_trait - abs(neg_trait_adj) * eff_hit
+                   ## Assume a negatively evolving efficiency
+                   new_trait_pos <- new_trait_pos +
+                       rnorm(length(new_trait_pos),
+                             ifelse(mut_var == "beta",  ## Beta and gamma in opposite directions
+                                    mut_mean
+                                 ,  mut_mean*-1)
+                           , mut_sd
+                             )
+               } else {
+                   new_trait_pos <- orig_trait$pos_trait +
+                       rnorm(length(orig_trait$pos_trait),
+                             ifelse(mut_var == "beta",  ## Beta and gamma in opposite directions
+                                    mut_mean
+                                 ,  mut_mean*-1)
+                           , mut_sd)
+          }
     ## Only a tradeoff curve. No evolution directly in beta. Beta is given by the tradeoff curve.
          } else {
-           
-     new_trait_pos <- orig_trait$pos_trait  
-     
+             new_trait_pos <- orig_trait$pos_trait  
          }
-    ## Parasite Tuning == TRUE
-       } else {
-
-         ## Assume neutrally evolving tuning
+        ## Parasite Tuning == TRUE
+    } else {
+        ## Assume neutrally evolving tuning
         new_trait_pos <- orig_trait$pos_trait +
             rnorm(length(orig_trait$pos_trait),
               0
@@ -103,53 +95,61 @@ get_mut_p        <- function (orig_trait, mut_var, power_c, power_exp, mut_link_
               )
        }
 
-        if (any(is.na(c(new_trait_pos, new_trait_neg)))) stop("??")
-        return(list(new_trait_pos = new_trait_pos, new_trait_neg = new_trait_neg))
-    } else stop("unknown mut_type")
+       if (any(is.na(c(new_trait_pos, new_trait_neg)))) stop("NAs detected in trait vectors??")
+       return(list(new_trait_pos = new_trait_pos, new_trait_neg = new_trait_neg))
+   } else stop("unknown mut_type")
 }
+
+##' draw new mutation values
+##' @param state current system state
+##' @param mut_var variable under mutation ("beta" or otherwise)
+##' @param orig_trait vector of original trait values
 do_mut           <- function (state, mut_var, orig_trait, ...) {
     new_trait        <- get_mut_p(orig_trait, mut_var, ...)
     state$ltraitvec  <- c(state$ltraitvec, new_trait$new_trait_pos)
     state$palphavec  <- c(state$palphavec, new_trait$new_trait_neg)
     return(state)
 }
-## Update mutant strain's trait values using power-law tradeoff. 
+
+##' Update mutant strain's trait values using power-law tradeoff. 
 update_mut_pt    <- function (state, orig_trait, power_c, power_exp, mut_link_p, mutated, mutated_host, mut_var, ...) {
 
-   ## Scale beta according to tradeoff curve
-   new_par_beta <- scale_beta_alpha(state, power_c, power_exp, mut_link_p, ...)
+    ## Scale beta according to tradeoff curve
+    new_par_beta <- scale_beta_alpha(state, power_c, power_exp, mut_link_p, ...)
 
-   ## Resistance will act to decrease parasite transmission and virulence following the shape of the tradeoff curve
-     ## Need to think criticall about what scale this should be conducted on. Both logit and probability scale feel like
-      ## they each have problems
-   ## First calculate a tradeoff curve with the same curvature that passes through the parasite's (alpha, beta)
-   cvec         <- pt_calc_c(beta = new_par_beta, alpha = mut_link_p$linkinv(state$palphavec), curv = power_exp)
+    ## Resistance will act to decrease parasite transmission and virulence following the shape of the tradeoff curve
+    ## Need to think critically about what scale this should be conducted on. Both logit and probability scale feel like
+    ## they have problems
+    ## First calculate a tradeoff curve with the same curvature that passes through the parasite's (alpha, beta)
+    cvec         <- pt_calc_c(beta = new_par_beta, alpha = mut_link_p$linkinv(state$palphavec), curv = power_exp)
 
-   ## For each of these tradeoff curves, calculate a new alpha and beta for each host that is infected
-   new_alphas   <- t(mut_link_p$linkinv(state$palphavec))
-   new_betas    <- matrix(power_tradeoff(
-     alpha = c(new_alphas)
-  ,  c     = rep(cvec, each = nrow(new_alphas)) 
-  ,  curv  = power_exp)
+    ## For each of these tradeoff curves, calculate a new alpha and beta for each host that is infected
+    new_alphas   <- t(mut_link_p$linkinv(state$palphavec))
+    new_betas    <- matrix(power_tradeoff(
+        alpha = c(new_alphas)
+     ,  c     = rep(cvec, each = nrow(new_alphas)) 
+    ,  curv  = power_exp)
     , nrow = nrow(new_alphas), ncol = ncol(new_alphas))
 
-   state$alpha  <- new_alphas
-   state$beta   <- new_betas
+    state$alpha  <- new_alphas
+    state$beta   <- new_betas
 
-   ## Update Infected matrix with the new strain, maintaining which S class received that mutation.
+    ## Update Infected matrix with the new strain, maintaining which S class received that mutation.
     ## For each mutated strain, Imat gets a new column with a single 1, in the row in which the mutation occurred
-   if (sum(mutated) > 0) {
-     ## First make a matrix of 0s, then add a single one in each column corresponding to the row of the host that the parasite mutated in
-     new_mutes            <- matrix(data = 0, nrow = nrow(state$Imat), ncol = sum(mutated))
-     num_mutes            <- matrix(c(rep(which(rowSums(mutated) > 0), rowSums(mutated)[rowSums(mutated) != 0])
-       , 1:sum(mutated)), ncol = 2, nrow = sum(mutated))
-     new_mutes[num_mutes] <- 1
-     state$Imat           <- cbind(state$Imat, new_mutes)
-   }
+    if (sum(mutated) > 0) {
+        ## First make a matrix of 0s, then add a single one in each column corresponding to the row of the host that the parasite mutated in
+        new_mutes            <- matrix(data = 0, nrow = nrow(state$Imat), ncol = sum(mutated))
+        num_mutes            <- matrix(c(rep(which(rowSums(mutated) > 0), rowSums(mutated)[rowSums(mutated) != 0])
+                                       , 1:sum(mutated)), ncol = 2, nrow = sum(mutated))
+        new_mutes[num_mutes] <- 1
+        state$Imat           <- cbind(state$Imat, new_mutes)
+    }
 
    return(state)
 }
-## Remove extinct strains
+
+
+##' Remove extinct strains
 do_extinct       <- function (state, mut_var, extinct, parasite) {
 
     state[[mut_var]] <- state[[mut_var]][,-extinct, drop = FALSE]
@@ -160,7 +160,7 @@ do_extinct       <- function (state, mut_var, extinct, parasite) {
 
     return(state)
 }
-## This function is borderline hideous but it does what I want it to do (mutlinomial draws and return proper
+## This function is borderline hideous but it does what I want it to do (multinomial draws and return proper
  ## matrix structure). All ears for a better way to write this
 get_inf          <- function (Svec, uninf, Imat, beta) {
 
@@ -194,24 +194,25 @@ pt_calc_c        <- function (alpha, beta, curv) {
 ## Scale parasite beta and alpha evolution by the tradeoff
 scale_beta_alpha <- function (state, power_c, power_exp, mut_link_p, parasite_tuning, tradeoff_only, eff_scale, ...) {
 
-## Determine the beta of a given pathogen strain | that pathogen's current alpha value
- ## Maximum possible beta
-max_beta      <- power_tradeoff(c = power_c, alpha = mut_link_p$linkinv(state$palphavec), curv = power_exp)
+    ## Determine the beta of a given pathogen strain | that pathogen's current alpha value
+    ## Maximum possible beta
+    max_beta      <- power_tradeoff(c = power_c, alpha = mut_link_p$linkinv(state$palphavec), curv = power_exp)
 
-## realized beta. If efficiency is directly the trait evolving use the "positive" trait, otherwise calculate efficiency from tuning
-if (parasite_tuning == FALSE & tradeoff_only == TRUE) {
-realized_beta <- max_beta
-} else {
-  if (parasite_tuning == TRUE) {
-realized_beta <- exp(-(state$ltraitvec - state$palphavec)^2 / eff_scale)  * max_beta
-  } else {
-realized_beta <- mut_link_p$linkinv(state$ltraitvec) * max_beta  
-}
+    ## realized beta. If efficiency is directly the trait evolving use the "positive" trait, otherwise calculate efficiency from tuning
+    if (!parasite_tuning && tradeoff_only) {
+        realized_beta <- max_beta
+    } else {
+        if (parasite_tuning) {
+            ## Gaussian fitness as a function of tuning
+            realized_beta <- exp(-(state$ltraitvec - state$palphavec)^2 / eff_scale)  * max_beta
+        } else {
+            ## fraction of max beta
+            realized_beta <- mut_link_p$linkinv(state$ltraitvec) * max_beta  
+        }
+    }
+    return(realized_beta)
 }
 
-return(realized_beta)
-
-}
 ## Calculate starting trait values for parasite and host | desired starting R0
 calc_startvals        <- function (alpha0, tuning, N, power_c, power_exp, mut_link_p, eff_scale, parasite_tuning, tradeoff_only) {
 
@@ -245,7 +246,7 @@ return(list(
   ))
 
 }
-## Determinisitc version for calculating start vals
+## Deterministic version for calculating start vals
 calc_startvals_determ <- function (alpha0, tuning, N, power_c, power_exp, mut_link_p, eff_scale) {
 
 ## No resistance in SIS, but leaving structure for now...
@@ -295,7 +296,13 @@ return(list(
   ))
 
 }
-## Wrappers for selecting random numbers from matrices and returning a matrix
+##' Select binomial random deviates, return a matrix with appropriate dimensions
+##' @param n total number of deviates
+##' @param size binomial N
+##' @param prob binomial probability
+##' @param nrow number of rows
+##' @param ncol number of cols
+## FIXME set default to ncol=1 ? eliminate nrow since determined by ncol? can we use dim(n) if it exists?
 rbinom_mat  <- function (n, size, prob, nrow, ncol) {
   matrix(rbinom(n, size, prob), nrow = nrow, ncol = ncol)
 }
@@ -362,10 +369,10 @@ epi.fun.wm   <- function (t, y, parms) {
 ## power tradeoff and R0 functions
 ######
 power_tradeoff <- function (alpha, c, curv) {
-  c * alpha ^ (1 / curv)
+    c * alpha ^ (1 / curv)
 }
 power_R0       <- function (alpha, c, curv, gamma, N) {
-  ( N * c * alpha ^ (1 / curv) )  / ( alpha + gamma )
+    N * power_tradeoff(alpha, c, curv)  / ( alpha + gamma )
 }
 power_R0_slope <- function (alpha, c, curv, gamma, N) {
   ( N * c * alpha ^ (1 / (curv - 1)) * (gamma - curv * alpha + alpha) )  / ( curv * (alpha + gamma)^2 )
@@ -382,18 +389,26 @@ power_R0_grad  <- function (alpha, c, curv, gamma, N, eps) {
 ######
 ## Top level sim function (wrapper)
 ######
+
+##' @param deterministic
+##' @param mut_type 
+##' @param mut_var 
+##' @param Imat 
+##' @param eff_scale 
+##' @param progress 
 run_sim <- function(
     ## These first parameters are all about what type of simulation to run
-     ## Note: hosts are always set to evolve. Crudly can force them never to evolve by just setting the probability to effectively 0
+     ## Note: hosts are always set to evolve. Crudely can force them never to evolve by just setting the probability to effectively 0
    deterministic        = FALSE   ## Run an advection diffusion version?
  , parasite_tuning      = TRUE    ## Reformulation where parasite efficiency is defined as matching tuning and aggressiveness
  , tradeoff_only        = FALSE   ## Stepping back to ignore tuning. Parasite just evolving according to the tradeoff curve
  , agg_eff_adjust       = FALSE   ## For efficiency model but not tuning model. Does an increase in parasite aggressiveness decrease efficiency (as a cost)
-    ## These next parametes all control how the simulation is run
+    ## These next parameters all control how the simulation is run
  , R0_init              = 2       ## >1, not actually used for tuning model
  , alpha0               = 0.03    ## Intrinsic parasite mortality probability (without influence of hosts). Default to main thesis result start
- , tune0                = 0.97    ## Strating tuning. Give a value, but only used if parasite_tuning == TRUE. Default to main thesis result start
+ , tune0                = 0.97    ## Starting tuning. Give a value, but only used if parasite_tuning == TRUE. Default to main thesis result start
  , gamma0               = 0.2     ## Background host recovery (immune pressure or however you want to think of it)
+                                  ## (Can set to zero if using non-tradeoff model)
  , N                    = 200     ## Host population size, integer > 0
  , mu                   = 0.01    ## Mutation probability, > 0
  , mut_type             = "shift" ## Type of mutation supported. Only shift viable in this version of the code
@@ -467,13 +482,17 @@ run_sim <- function(
       }
 
     ## If deterministic == TRUE, set up the full array of possible strains from the start (for diffusion via mutation)
-    if (deterministic == FALSE) {
+    if (!deterministic) {
 
-   ## Based on my new setup it seems better to directly calculate efficiency and starting beta as a function of defined tuning
-    ## and aggressiveness starting values instead of going backwards from R0
-    startvals  <- calc_startvals(alpha0, tune0, N, power_c, power_exp, mut_link_p, eff_scale, parasite_tuning, tradeoff_only)
-    beta0      <- startvals$joint_beta
+        ## Based on my new setup it seems better to directly calculate efficiency and starting beta as a function of defined tuning
+        ## and aggressiveness starting values instead of going backwards from R0
 
+        startvals  <- calc_startvals(alpha0, tune0, N,
+                                     power_c, power_exp,
+                                     mut_link_p, eff_scale, parasite_tuning,
+                                     tradeoff_only)
+        beta0      <- startvals$joint_beta
+        
      if (is.null(Imat)) {
    ## start at equilibrium I ...
       Imat <- max(1, round(N*(1 - 1/R0_init)))
@@ -499,9 +518,9 @@ run_sim <- function(
 
       ## Also adjust Imat to capture how many total strains there are
       Imat       <- matrix(data = 0, ncol = length(alpha0), nrow = length(tuning))
-      ## Later can set a parameter for which strains are the starting strains
-       # Imat[nrow(Imat), 1] <- N - sum(Svec)
-       # Imat[1, 1] <- N - sum(Svec)
+        ## Later can set a parameter for which strains are the starting strains
+        ## Imat[nrow(Imat), 1] <- N - sum(Svec)
+        ## Imat[1, 1] <- N - sum(Svec)
       ## With the deterministic rate model need to start at a high enough beta to overcome gamma0
        Imat[Imat_seed[1], Imat_seed[2]] <- N - sum(Svec)
 
@@ -511,30 +530,31 @@ run_sim <- function(
        N <- 1
     }
 
-    ## The trait that defines parasite efficiency that is evolving will differ depending on the formulation of
-     ## how a parasite is evolving. 
-    ## Set up this way so that the rest of the code relies upon the same structure, and all the knobs can use the
-     ## same code with fewer modifications (does increase confusion at places I suppose)
-    if (parasite_tuning == TRUE | (parasite_tuning == FALSE & tradeoff_only == FALSE)) {
-      if (deterministic == FALSE) {
-      ltraitvec  <- mut_link_p$linkfun(startvals$tuning)     
-      } else {
-      ltraitvec  <- startvals$tuning 
-      }
+    ## The trait that defines evolution of parasite efficiency will differ depending on the
+    ##  model formulation
+    ## Set up this way so that the rest of the code relies upon the same structure,
+    ## and all the knobs can use the same code with fewer modifications
+    if (parasite_tuning || (!parasite_tuning && !tradeoff_only)) {
+        if (!deterministic) {
+            ltraitvec  <- mut_link_p$linkfun(startvals$tuning)     
+        } else {
+            ltraitvec  <- startvals$tuning 
+        }
     } else {
-     ltraitvec  <- mut_link_p$linkfun(startvals$joint_beta)
+        ltraitvec  <- mut_link_p$linkfun(startvals$joint_beta)
     }
 
     ## Alpha (intrinsic parasite mortality pressure)
-    if (deterministic == FALSE) {
-    palphavec  <- mut_link_p$linkfun(alpha0)
+    if (!deterministic) {
+        palphavec  <- mut_link_p$linkfun(alpha0)
     } else {
-    palphavec  <- alpha0 
+        palphavec  <- alpha0 
     }
 
-    ## Initial trait vectors for the host genotypes. Assumes all hosts start with identical trait value (for now)
-#    hrtraitvec <- rep(mut_link_h$linkfun(res0), length(res0))
-#    httraitvec <- rep(mut_link_h$linkfun(tol0), length(tol0))
+    ## Initial trait vectors for the host genotypes.
+    ## Assumes all hosts start with identical trait value (for now)
+    ##    hrtraitvec <- rep(mut_link_h$linkfun(res0), length(res0))
+    ##    httraitvec <- rep(mut_link_h$linkfun(tol0), length(tol0))
 
     ## Without host resistance and tolerance evolution alpha0 is just what was defined
     alpha0     <-  startvals$joint_alpha
@@ -587,15 +607,14 @@ run_sim <- function(
     num_extinct <- 0
 
     ## Run the stochastic version
-    if (deterministic == FALSE) {
+    if (!deterministic) {
 
     for (i in 1:nrpt) {
-
             for (j in 1:rptfreq) {
 
-               ## Debug code chunck that can be cut and paste to wherever there is a problem
+               ## Debug code chunk that can be cut and paste to wherever there is a problem
                 ## Fill i and j in manually after checking output after an error is encountered
-                if (debug2 == TRUE) {
+                if (debug2) {
                   print(paste(i, j, sep = "  -  "))
                   print(str(state$Svec))
                   assign("state_check", state, .GlobalEnv)
@@ -604,16 +623,20 @@ run_sim <- function(
 
                 ## [Step 1]: Infection.
                 ## Prob of escaping infection completely
-                uninf      <- rbinom_mat(
-                  n    = length(state$Svec)
-                , size = state$Svec
-                , prob = prod((1-state$beta)^state$Imat)
-                , nrow = nrow(state$Svec)
-                , ncol = ncol(state$Svec))
+                uninf      <- with(state,
+                       rbinom_mat(
+                  n    = length(Svec)
+                , size = Svec
+                , prob = prod((1-beta)^Imat)
+                , nrow = nrow(Svec)
+                , ncol = ncol(Svec))
+                )
                 
-                ## Division of new infectives among strains
-                 ## 'prob' is internally normalized
+                ## Division of new infections among strains
+                ## 'prob' is internally normalized
                 newinf     <- get_inf(state$Svec, uninf, state$Imat, beta = state$beta)
+
+                ## sanity check
                 stopifnot(sum(rowSums(newinf) + uninf) == sum(state$Svec))
 
                 ## [Step 2]: Recovery of I.
@@ -621,24 +644,29 @@ run_sim <- function(
                   n    = length(c(state$Imat))
                 , size = c(state$Imat)
                   ## total host recovery based on some background probability + whatever the parasite is doing
+                  ## hazard-scale calculation: (1-gamma0) is probability of "no baseline recovery", 1-alpha is probability
+                  ##  of "no strain-specific recovery"
                 , prob =  1 - (1 - c(state$alpha)) * (1 - gamma0)
                 , nrow = nrow(state$Imat)
                 , ncol = ncol(state$Imat))
 
+                ## [Step 3: host mortality]
+                
                 ## [Step 4.1]: Mutation of new infections. Fraction of new infections -> mutation
-               if (sum(newinf) != 0) {
-                  mutated  <- rbinom_mat(n = newinf, size = newinf, prob = mu, nrow = nrow(newinf), ncol = ncol(newinf))
+               if (sum(newinf) > 0) {
+                   mutated  <- rbinom_mat(n = newinf, size = newinf, prob = mu, nrow = nrow(newinf), ncol = ncol(newinf))
                } else {
-                  mutated  <- rbinom_mat(n = nrow(newinf), size = newinf, prob = mu, nrow = nrow(newinf), ncol = ncol(newinf))
+                   mutated <- matrix(0, nrow=nrow(newinf), ncol=1)
                }
 
                 ## debug to force mutation to check if that is working
-                if (debug3 == TRUE) { 
+                if (debug3) { 
                   mutated[1, 1] <- 2
                 }
                 
                 mut_counter <- mut_counter + sum(mutated)
 
+                ## sanity checks
                 stopifnot(length(recover) == length(mutated))
                 stopifnot(length(newinf)  == length(state$Imat))
 
@@ -651,7 +679,7 @@ run_sim <- function(
                 ## [Step 4.4]: Find new phenotypes for mutated parasites and hosts.
                 tot_mut <- sum(mutated)
 
-                ## Original parasite taits that mutants arise from. Need this for later
+                ## Original parasite traits that mutants arise from. Need this for later
                 orig_trait <- list(
                    pos_trait = rep(state$ltraitvec, colSums(mutated))
                  , neg_trait = rep(state$palphavec, colSums(mutated))
@@ -679,7 +707,7 @@ run_sim <- function(
                 ## [Step 5]: Update Svec with infections and recoveries prior to the mutations
                 state$Svec <- state$Svec + rowSums(recover) - rowSums(newinf) 
 
-                ## [Step 6]: Update state (a big component beign parasite alpha and beta) with new parasite and host evolution.
+                ## [Step 6]: Update state (a big component being parasite alpha and beta) with new parasite and host evolution.
                 if (tot_mut > 0) {
                 state <- update_mut_pt(
                     state           = state
@@ -710,7 +738,7 @@ run_sim <- function(
 
             }  ## rptfreq time steps
       
-    if (debug4 == TRUE & i == debug4_val) {
+    if (debug4 && i == debug4_val) {
       browser()
     }
       
@@ -733,7 +761,7 @@ run_sim <- function(
 #        lhtol_mean   <- sum(state$Svec*state$httraitvec)/num_S
 #        lhtol_sd     <- sqrt(sum(state$Svec*(state$httraitvec-lhtol_mean)^2)/num_S)
         pop_size     <- num_I + num_S
-        shann        <- diversity(state$Imat, index = "shannon", MARGIN = 1, base = exp(1))
+        shann        <- vegan::diversity(state$Imat, index = "shannon", MARGIN = 1, base = exp(1))
 
         ## actual alpha and beta of all parasites in all host classes
         avg_alpha    <- mean(state$alpha)
@@ -747,8 +775,6 @@ run_sim <- function(
           if (((i / 50) %% 1) == 0) {
           print(paste(round(i/nrpt, 2)*100, "% Complete"))            
           }
-        } else {
-          
         }
         res[i,] <- c(
           i*rptfreq
@@ -785,7 +811,9 @@ run_sim <- function(
         }
 
     } ## loop over reporting frequencies
-   # if (progress) cat("\n")
+        if (progress=="bar") {
+            cat("\n")
+        }
     return(res)
 
     ## Run the deterministic model
@@ -835,7 +863,7 @@ run_sim <- function(
         , nspec      = 1
         )
 
-  epi.out
+        return(epi.out)
 
     }
 }

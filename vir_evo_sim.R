@@ -101,7 +101,7 @@ res_1000_stochas_s <- res_1000_stochas %>%
 
 ## Just the deterministic version run here, can also run the stochastic AD with:
  ## par_evo_AD_rand function
-if (AD_also == TRUE) {
+if (AD_also) {
 ## Gradient Ascent
 ## Need power c and power exp?
 grad_ascent <- par_evo_AD(

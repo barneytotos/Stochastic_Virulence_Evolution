@@ -19,60 +19,62 @@
 
 ## See NOTE: ** for a couple of key notes in a few scripts
 
+## BMB: what *exactly* does this mean?
 host_mort <- FALSE
 
-## required packages
+## load (and install if necessary!) required packages
 source("needed_packages.R")
 
 ## ggplot theme
 source("ggplot_theme.R")
 
-## Required functions to run the model.
- ## **Note: The SIR script is poorly named, it is SIS with host mortality. 
- ## funs_SIS.R is SIS with no host mortality
-if (host_mort == TRUE) {
-source("funs_SIR.R")
+## Load equired functions to run the model.
+## The SIR script is poorly named: it is really "SIS with host mortality". 
+## funs_SIS.R is SIS with no host mortality
+if (host_mort) {
+    source("funs_SIR.R")
 } else {
-source("funs_SIS.R")   
+    source("funs_SIS.R")   
 }
 
 #####
-## Options to run the model and store results include
-#####
-## (Option 1) parameter_setup.R _then_ res_tol_sim.R. Best to use for single runs to explore parameter values
-## (Option 2) XXXX_manual_setup.R _then_ XXXX_tidy.R. Large parameter space exploration and initial cleaning for plotting
- ## Can recover what I fit for thesis and poster
+## Options to run the model and store results:
+## 1. parameter_setup.R *then* res_tol_sim.R. Best to use for single runs to explore parameter values
+## 2. XXXX_manual_setup.R *then* XXXX_tidy.R. Large parameter space exploration and initial cleaning for plotting
+## (Can recover what I fit for thesis and poster)
 
 #####
 ## Option 1
 #####
 
 ## set up parameters
-if (host_mort == TRUE) {
-source("parameter_setup.R")
+if (host_mort) {
+    source("parameter_setup.R")
 } else {
-source("parameter_setup_nm.R")   
+    source("parameter_setup_nm.R")   
 }
 
 ## run the sim. For manual plotting exploration the output from this script to use is:
  ## res_1000_stochas   : all
  ## res_1000_stochas_s : runs summarized into quantiles
-if (host_mort == TRUE) {
-source("res_tol_sim.R")
+if (host_mort) {
+    source("res_tol_sim.R")
 } else {
-source("vir_evo_sim.R")
+    ## single run
+    source("vir_evo_sim.R")
 }
   
 #####
 ## Option 2
 #####
 
-if (host_mort == TRUE) {
-## Set up parameter values
-source("res_tol_stochas_manual_setup.R")
-source("res_tol_determ_manual_setup.R")
-source("res_tol_ad_manual_setup.R")
+if (host_mort) {
+    ## Set up parameter values
+    source("res_tol_stochas_manual_setup.R")
+    source("res_tol_determ_manual_setup.R")
+    source("res_tol_ad_manual_setup.R")
 } else {
+<<<<<<< HEAD
 ## This script now has lots of exploration and debugging stuff. Don't run through source() but it
  ## does remain a useful script to look through
 # source("vir_evo_stochas_manual_setup.R")  
@@ -81,12 +83,21 @@ source("res_tol_ad_manual_setup.R")
 source("vir_evo_stochas_to_bulk.R")
  ## streamlined script for efficiency model
 source("vir_evo_stochas_eff_bulk.R")   
+=======
+    ## This script now has lots of exploration and debugging stuff. Don't run through source() but it
+    ## does remain a useful script to look through
+    ## source("vir_evo_stochas_manual_setup.R")  
+    ## streamlined script for tradeoff only
+    source("vir_evo_stochas_to_bulk.R")
+    ## streamlined script for efficiency model
+    source("vir_evo_stochas_eff_bulk.R")   
+>>>>>>> 48da966643a47dda183e2eb0002c0fe0d670645e
 }
 
 ## Examine the results
-if (host_mort == TRUE) {
-source("stochastic_tidy.R")
-source("determ_tidy.R")
+if (host_mort) {
+    source("stochastic_tidy.R")
+    source("determ_tidy.R")
 }
 
 ## Can also just load previous results... Email me for thesis or poster "raw data" (sim results), too large for github 
@@ -98,15 +109,21 @@ source("determ_tidy.R")
 # (4) res_tol_plots_final.R
 
 ## Plot
-if (host_mort == TRUE) {
-source("res_tol_plots_final.R")
+if (host_mort) {
+    source("res_tol_plots_final.R")
 } else {
+<<<<<<< HEAD
  ## Plot one model at a time
 tradeoff_only <- FALSE
 source("vir_evo_hypercube_plotting.R")
+=======
+    ## Plot one model at a time
+    tradeoff_only <- TRUE
+    source("vir_evo_hypercube_plotting.R")
+>>>>>>> 48da966643a47dda183e2eb0002c0fe0d670645e
 }
 
- ## NOTE: ** res_tol_plots_final.R is pretty incomplete. Can probably step through this scipt, but I warn you (*whoever
+ ## NOTE: ** res_tol_plots_final.R is pretty incomplete. Can probably step through this script, but I warn you (*whoever
   ## is finding this note*) that that plotting script is quite convoluted. Either work your way through it or do your
    ## own plotting from the results you fit.
 

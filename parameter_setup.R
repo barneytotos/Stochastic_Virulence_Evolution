@@ -3,7 +3,7 @@
 ###################################
 
 nt            <- 1e5
-num_points    <- 600
+num_points    <- 600 
 rptfreq       <- max(nt / num_points, 1) 
 num_runs      <- 5
 deterministic <- FALSE ## run the model via reaction-diffusion deterministic?
@@ -26,8 +26,8 @@ params <- expand.grid(
   ## ** !! key parameters.
   ## (TRUE, --, --) for tuning
   ## (FALSE, TRUE, --) for just tradeoff curve
-  ## (FALSE, FALSE, FALSE) for _no_ parastie beta setback with evo change in alpha
-  ## (FALSE, FALSE, TRUE) for parastie beta setback with evo change in alpha
+  ## (FALSE, FALSE, FALSE) for _no_ parasite beta setback with evo change in alpha
+  ## (FALSE, FALSE, TRUE) for parasite beta setback with evo change in alpha
   ## for nearly neutral see Ben's results and use Ben's script
  , parasite_tuning     = FALSE
  , tradeoff_only       = TRUE
@@ -35,14 +35,14 @@ params <- expand.grid(
  , mut_var             = "beta"
  , d                   = 0.01
 ## Need to convert this to a rate of diffusion if deterministic == TRUE
- , mu                  = if (deterministic == FALSE) {
-   c(0.01)
- # c(1E-5, 5E-5, 1E-4, 5E-4, 1E-3, 5E-3, 1E-2)
- } else {
- #  0.025
-   0.002
- #  0.20
- }
+ , mu                  = if (!deterministic) {
+                             c(0.01)
+                             ## c(1E-5, 5E-5, 1E-4, 5E-4, 1E-3, 5E-3, 1E-2)
+                         } else {
+                             ##  0.025
+                             0.002
+                                        #  0.20
+                         }
  , mut_mean            = 0 # -0.4
  , mut_sd              = c(0.15)  #  c(0.01, 0.05, 0.10, 0.15, 0.20, 0.25) 
 ## If deterministic == TRUE, start with a whole array of possible strain values for virulence (done internally)
@@ -60,11 +60,11 @@ params <- expand.grid(
  , mut_host_mu_shift   = 100000000000 # need some huge number here
  , mut_host_res_bias   = 0
  , host_dyn_only       = FALSE
- , power_c             = if (deterministic == FALSE) {
-   0.01 #  0.75
-   } else {
-   10
-   } 
+ , power_c             = if (!deterministic) {
+                             0.01 #  0.75
+                         } else {
+                             10
+                         } 
  , power_exp           = 3 # 2
  , b_decay             = 2.3
  , b                   = 0.5

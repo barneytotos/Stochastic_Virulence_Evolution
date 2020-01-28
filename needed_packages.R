@@ -14,7 +14,10 @@ needed_packages <- c(
 , "reshape2"
 , "lhs"
 , "vegan"
+<<<<<<< HEAD
 , "viridis"
+=======
+>>>>>>> 48da966643a47dda183e2eb0002c0fe0d670645e
   )
 
 ## Check if the packages are installed. If they are not install them, then load them
