@@ -8,7 +8,7 @@ deterministic <- FALSE ## run the model via reaction-diffusion deterministic?
 
 source("funs_SIS.R")
 params <- list(
-               nearly_neutral       = FALSE
+               nearly_neutral       = TRUE
              , nn_mut_var_pos_trait = TRUE
              , pos_trait0           = 0.005
              , nt                   = nt
@@ -21,7 +21,7 @@ params <- list(
              , d                    = 0.01
                ## Need to convert this to a rate of diffusion if deterministic == TRUE
              , mu                   = if (!deterministic) 0.01 else 0.002
-             , mut_mean             = 0
+             , mut_mean             = -0.05
              , mut_sd               = 0.15
              , neg_trait0           = 0.01
              , tune0                = 0.03
@@ -52,7 +52,7 @@ res <- do.call(run_sim,run_sim_params)
 
 ##
 expect_equal(nrow(res),50)
-expect_equal(ncol(res),20)           ## MPK: fails this check, but I stopped tracking 2 things so that makes sense
+expect_equal(ncol(res),18)          
 expect_true(all(res$pop_size==400))
 
 ## MPK: naming has changed
@@ -63,32 +63,21 @@ m <- colMeans(tail(res[sum_vars],10))
 ## MPK: names changed values have not
 expect_equal(m,
              c(
-                     num_S = 89.8
-                   , num_I = 310.2
-                   , num_I_strains = 15.9
-                   , mean_negtrait = 0.121693099287746
-                   , sd_negtrait = 0.0183743633406564
-                   , mean_postrait = 0.0493277969025787
-                   , sd_postrait = 0.00251319702486456
-                   , shannon = 1.79367083406878))
+                     num_S = 69.3
+                   , num_I = 330.7
+                   , num_I_strains = 17.2
+                   , mean_negtrait = 0.01
+                   , sd_negtrait = 0.0
+                   , mean_postrait = 0.9898525183219263
+                   , sd_postrait = 0.009098842919324621
+                   , shannon = 1.995994234250763))
 
 ## plot (not part of a real pipeline)
-alpha_vars <- res[,c("mean_negtrait","median_negtrait","lower_negtrait","upper_negtrait")]
-alpha_vars$mean_negtrait <- log(alpha_vars$mean_negtrait)
+alpha_vars <- res[,c("mean_postrait")]
+alpha_vars$mean_postrait <- log(alpha_vars$mean_postrait)
 matplot(res$time,
        alpha_vars,
        type="l",
        xlab="time",
        ylab="alpha",
        lwd=c(2,1,1,1))
-
-## DETERMINISTIC test ... ?
-
-run_sim_params_neutral <- transform(run_sim_params,
-                                    power_c = 0.2,
-                                    power_exp = 0,
-                                    gamma0 = 0,
-                                    mut_mean = -0.1)
-
-## not yet
-## res_neutral <- do.call(run_sim,run_sim_params_neutral)
