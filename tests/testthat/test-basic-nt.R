@@ -8,8 +8,8 @@ deterministic <- FALSE ## run the model via reaction-diffusion deterministic?
 
 source("funs_SIS.R")
 params <- list(
-               nearly_neutral       = TRUE
-             , nn_mut_var_pos_trait = TRUE
+               no_tradeoff          = TRUE
+             , nt_mut_var_pos_trait = TRUE
              , pos_trait0           = 0.005
              , nt                   = nt
              , rptfreq              = rptfreq

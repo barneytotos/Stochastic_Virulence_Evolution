@@ -27,12 +27,12 @@
 ## Accessory Functions
 ######
 
-get_mut_p        <- function (orig_trait, nearly_neutral, nn_mut_var_pos_trait, power_c, power_exp, mut_link_p, mut_mean
+get_mut_p        <- function (orig_trait, no_tradeoff, nt_mut_var_pos_trait, power_c, power_exp, mut_link_p, mut_mean
   , mut_sd, mut_type = "shift", agg_eff_adjust, eff_hit, parasite_tuning, tradeoff_only) {
 
-  if (nearly_neutral) {
+  if (no_tradeoff) {
     
-    if (nn_mut_var_pos_trait) {
+    if (nt_mut_var_pos_trait) {
        pos_trait_adj <- rnorm(length(orig_trait$pos_trait), mut_mean, mut_sd)
        new_trait_pos <- orig_trait$pos_trait + pos_trait_adj   
        ## Function always returns both new_trait_pos and new_trait_neg so need the other one
@@ -119,17 +119,17 @@ get_mut_p        <- function (orig_trait, nearly_neutral, nn_mut_var_pos_trait, 
 ##' @param state current system state
 ##' @param mut_var variable under mutation ("beta" or otherwise)
 ##' @param orig_trait vector of original trait values
-do_mut           <- function (state, nearly_neutral, nn_mut_var_pos_trait, orig_trait, power_c, power_exp, mut_link_p, mutated, parasite_tuning, tradeoff_only, eff_scale, ...) {
+do_mut           <- function (state, no_tradeoff, nt_mut_var_pos_trait, orig_trait, power_c, power_exp, mut_link_p, mutated, parasite_tuning, tradeoff_only, eff_scale, ...) {
   
     ## Goal here will be to always run these first lines, then have the output finished if(neutral)
   
     ## !! I clearly don't understand something about these nested function calls, why tradeoff_only now isn't found, without = tradeoff_only or why my , ... started to break
-    new_trait        <- get_mut_p(orig_trait, nearly_neutral, nn_mut_var_pos_trait, power_c, power_exp, mut_link_p, tradeoff_only = tradeoff_only, parasite_tuning = parasite_tuning, ...)
+    new_trait        <- get_mut_p(orig_trait, no_tradeoff, nt_mut_var_pos_trait, power_c, power_exp, mut_link_p, tradeoff_only = tradeoff_only, parasite_tuning = parasite_tuning, ...)
     state$lpostrait  <- c(state$lpostrait, new_trait$new_trait_pos)
     state$lnegtrait  <- c(state$lnegtrait, new_trait$new_trait_neg)
     
     ## if using tradeoff curve, translate the new mutant link-scale values into the probability scale by using the tradeoff curve in 
-     ## the appropriate way, determined by the model chosen (tradeoff only, efficiency, or tuning). Otherwise, for nearly_neutral this
+     ## the appropriate way, determined by the model chosen (tradeoff only, efficiency, or tuning). Otherwise, for no_tradeoff this
       ## function will just use the link inverse 
 
     state <- update_mut_pt(
@@ -139,7 +139,7 @@ do_mut           <- function (state, nearly_neutral, nn_mut_var_pos_trait, orig_
                   , power_exp       = power_exp
                   , mut_link_p      = mut_link_p
                   , mutated         = mutated
-                  , nearly_neutral  = nearly_neutral
+                  , no_tradeoff     = no_tradeoff
                   , parasite_tuning = parasite_tuning
                   , tradeoff_only   = tradeoff_only
                   , eff_scale       = eff_scale)
@@ -160,9 +160,9 @@ do_mut           <- function (state, nearly_neutral, nn_mut_var_pos_trait, orig_
 }
 
 ##' Update mutant strain's trait values using power-law tradeoff. 
-update_mut_pt    <- function (state, orig_trait, power_c, power_exp, mut_link_p, mutated, mutated_host, nearly_neutral, tradeoff_only, ...) {
+update_mut_pt    <- function (state, orig_trait, power_c, power_exp, mut_link_p, mutated, mutated_host, no_tradeoff, tradeoff_only, ...) {
 
-  if (!nearly_neutral) {
+  if (!no_tradeoff) {
     ## Scale beta according to tradeoff curve
     new_par_beta <- scale_beta_alpha(state, power_c, power_exp, mut_link_p, tradeoff_only, ...)
 
@@ -266,7 +266,7 @@ scale_beta_alpha <- function (state, power_c, power_exp, mut_link_p, parasite_tu
 }
 
 ## Calculate starting trait values for parasite and host | desired starting R0
-calc_startvals        <- function (neg_trait0, tuning, N, power_c, power_exp, mut_link_p, eff_scale, parasite_tuning, tradeoff_only, nearly_neutral, pos_trait0) {
+calc_startvals        <- function (neg_trait0, tuning, N, power_c, power_exp, mut_link_p, eff_scale, parasite_tuning, tradeoff_only, no_tradeoff, pos_trait0) {
 
 ## No resistance in SIS, but leaving structure for now...
 negtrait_r     <- mut_link_p$linkinv(mut_link_p$linkfun(neg_trait0)) #- mut_link_h$linkfun(res0))
@@ -275,7 +275,7 @@ negtrait_r     <- mut_link_p$linkinv(mut_link_p$linkfun(neg_trait0)) #- mut_link
 negtrait_rt    <- mut_link_p$linkinv(mut_link_p$linkfun(negtrait_r)) # - mut_link_h$linkfun(tol0))
 
 ## Symmetrical matrix of efficiencies associated with combination of each parasite trait
-if (!nearly_neutral) {
+if (!no_tradeoff) {
 if (parasite_tuning) {
 effic       <- outer(mut_link_p$linkfun(neg_trait0), mut_link_p$linkfun(tuning), FUN = eff_calc, eff_scale = eff_scale)
 } else {
@@ -456,8 +456,8 @@ power_R0_grad  <- function (alpha, c, curv, gamma, N, eps) {
 ##' @param eff_scale 
 ##' @param progress 
 run_sim <- function(
-   nearly_neutral       = TRUE
- , nn_mut_var_pos_trait = TRUE    ## For nearly neutral model are we tracking evolution in transmission (pos_trait) (TRUE) or recovery (neg_trait) (FALSE)
+   no_tradeoff          = TRUE
+ , nt_mut_var_pos_trait = TRUE    ## For nearly neutral model are we tracking evolution in transmission (pos_trait) (TRUE) or recovery (neg_trait) (FALSE)
  , pos_trait0           = 0.005 
     ## These first parameters are all about what type of simulation to run
      ## Note: hosts are always set to evolve. Crudely can force them never to evolve by just setting the probability to effectively 0
@@ -544,7 +544,7 @@ run_sim <- function(
         startvals  <- calc_startvals(neg_trait0, tune0, N,
                                      power_c, power_exp,
                                      mut_link_p, eff_scale, parasite_tuning,
-                                     tradeoff_only, nearly_neutral, pos_trait0)
+                                     tradeoff_only, no_tradeoff, pos_trait0)
     #    pos_trait0 <- startvals$joint_postrait
         
      if (is.null(Imat)) {
@@ -587,7 +587,7 @@ run_sim <- function(
     ##  model formulation
     ## Set up this way so that the rest of the code relies upon the same structure,
     ## and all the knobs can use the same code with fewer modifications
-    if (nearly_neutral) {
+    if (no_tradeoff) {
       lpostrait  <- mut_link_p$linkfun(startvals$joint_postrait)
     } else {
     if (parasite_tuning || (!parasite_tuning && !tradeoff_only)) {
@@ -751,8 +751,8 @@ run_sim <- function(
                 if (tot_mut > 0) {
                     state <- do_mut(
                       state
-                    , nearly_neutral       = nearly_neutral
-                    , nn_mut_var_pos_trait = nn_mut_var_pos_trait
+                    , no_tradeoff          = no_tradeoff
+                    , nt_mut_var_pos_trait = nt_mut_var_pos_trait
                     , orig_trait           = orig_trait  ## ^^Just care about intrinsic nature of a strain
                     , mut_mean             = mut_mean
                     , mut_sd               = mut_sd
