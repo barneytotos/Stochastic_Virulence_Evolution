@@ -1,14 +1,12 @@
 library(testthat)
-## run from head
-source("R/utils.R")
+## package will be loaded at this point
 
 nt <- 1e4
 num_points <- 50
 rptfreq       <- max(nt / num_points, 1) 
 num_runs      <- 1
 deterministic <- FALSE ## run the model via reaction-diffusion deterministic?
-
-source("funs_SIS.R")
+## source("funs_SIS.R")
 params <- list(
                no_tradeoff          = FALSE
              , nt_mut_var_pos_trait = TRUE
@@ -65,14 +63,15 @@ expect_equal(m,
                shannon = 1.79367083)
 )
 
-plot.evosim(res)
+plot(res)  ## goes to look for plot.evosim function
 
+## re-running without tradeoff
 run_sim_params_nt <- transform(run_sim_params,
                                     no_tradeoff = TRUE,
                                     mut_mean = -0.05)
 res_nt <- do.call(run_sim,run_sim_params_nt)
 
-plot.evosim(res_nt)
+plot(res_nt)
 
 m_nt <- colMeans(tail(res_nt[sum_vars],10))
 

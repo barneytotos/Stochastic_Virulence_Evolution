@@ -859,6 +859,7 @@ run_sim <- function(
         if (progress=="bar") {
             cat("\n")
         }
+    class(res) <- c("hpevosim","data.frame")   
     return(res)
 
     ## Run the deterministic model

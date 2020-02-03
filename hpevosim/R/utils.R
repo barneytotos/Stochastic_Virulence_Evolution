@@ -10,7 +10,8 @@ namedList <- function (...)
     setNames(L, nm)
 }
 
-plot.evosim <- function(x, ..., type="postrait") {
+##' @export
+plot.hpevosim <- function(x, ..., type="postrait") {
     require("ggplot2")
     switch(type,
            postrait= (ggplot(x, aes(time, y=mean_postrait,
