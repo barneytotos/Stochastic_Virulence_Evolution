@@ -1,53 +1,10 @@
 library(testthat)
 ## package will be loaded at this point
 
-nt <- 1e4
-num_points <- 50
-rptfreq       <- max(nt / num_points, 1) 
-num_runs      <- 1
-deterministic <- FALSE ## run the model via reaction-diffusion deterministic?
-## source("funs_SIS.R")
-params <- list(
-               no_tradeoff          = FALSE
-             , nt_mut_var_pos_trait = TRUE
-             , pos_trait0           = 0.005
-             , nt                   = nt
-             , rptfreq              = rptfreq
-             , deterministic        = deterministic
-             , parasite_tuning      = FALSE
-             , tradeoff_only        = TRUE
-             , agg_eff_adjust       = FALSE
-             , mut_var              = "beta"
-             , d                    = 0.01
-               ## Need to convert this to a rate of diffusion if deterministic == TRUE
-             , mu                   = if (!deterministic) 0.01 else 0.002
-             , mut_mean             = 0
-             , mut_sd               = 0.15
-             , neg_trait0           = 0.01
-             , tune0                = 0.03
-             , tol0                 = 1
-             , res0                 = 1
-             , gamma0               = 0.2
-             , run                  = 1
-             , mut_host_mean_shift  = 1      
-             , mut_host_sd_shift    = 1
-             , mut_host_mu_shift    = 100000000000 # need some huge number here. Not used in this iteration anyway
-             , mut_host_res_bias    = 0
-             , host_dyn_only        = FALSE
-             , power_c              = 0.1
-             , power_exp            = 3 # 2
-             , b_decay              = 2.3
-             , b                    = 0.5
-             , N                    = 400
-             , birth_type           = "fill"
-             , eff_scale            = 30
-             , param_num = 1
-             , seed = 101
-               )
 sum_vars <- c("num_S","num_I","num_I_strains","mean_negtrait","sd_negtrait",
               "mean_postrait","sd_postrait","shannon")
 
-run_sim_params <- params[intersect(names(params),names(formals(run_sim)))]
+run_sim_params <- stoch_params0[intersect(names(stoch_params0),names(formals(run_sim)))]
 res <- do.call(run_sim,run_sim_params)
 
 expect_equal(nrow(res),50)

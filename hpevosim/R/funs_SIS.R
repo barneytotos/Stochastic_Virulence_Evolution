@@ -633,6 +633,7 @@ run_sim <- function(
 
     nrpt <- nt %/% rptfreq
 
+    ## FIXME: add, somehow, to documentation (is there a way to not repeat ourselves?)
      ## Added tracking host responses
     res <- as.data.frame(matrix(
       NA, nrow = nrpt, ncol = 18

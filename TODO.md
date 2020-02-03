@@ -6,12 +6,13 @@
 * ~~List of naming updates (I like the positive_trait, negative_trait idea, but should integrate it throughout)~~
   - ~~alpha and gamma depending on the model~~
   - SIR vs host_mort vs host resistance and tolerance evolution or no
+* get deterministic stuff working
 
 ## Someone
 
-* test deterministic cases
-* what do we need to get ensembles (rather than summaries) back? Or more quantiles?
+* Different levels of detail: what do we need to get ensembles (rather than summaries) back? Or more quantiles? (maybe a "quantiles" argument, i.e. a vector of quantiles of traits to return [marginal, i.e. for each trait: what about 2D summaries?])
 * house of cards mutation model for no-tradeoff case?
+
 * package structure:
     * top level - analyses for the paper
 	    * R files here are the specific runs we want to do
