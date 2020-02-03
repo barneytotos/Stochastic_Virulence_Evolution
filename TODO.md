@@ -7,7 +7,10 @@
   - alpha and gamma depending on the model
   - SIR vs host_mort vs host resistance and tolerance evolution or no
 
-## Ben
+## Someone
+
+* test deterministic cases
+* what do we need to get ensembles (rather than summaries) back? Or more quantiles?
+* house of cards mutation model for no-tradeoff case?
  
-* poke around in sim code, try to understand it, document/clean up -- figure out what stands in the way of reducing it to a no-tradeoff model ...?
-* naming conventions: "recovery" <-> "alpha"
+
