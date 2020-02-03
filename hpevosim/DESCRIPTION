@@ -1,0 +1,8 @@
+Package: hpevosim
+Title: SOMETHING
+Description: SOMETHING
+Version: 0.0.1
+Authors@R: c(person("Kain","Morgan",email="morganpkain@gmail.com",role=c("aut","cre")),
+	   person("Bolker","Ben", role="ctb"))	   
+License: GPL
+RoxygenNote: 7.0.2

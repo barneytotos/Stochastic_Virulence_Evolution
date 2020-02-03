@@ -445,16 +445,14 @@ power_R0_grad  <- function (alpha, c, curv, gamma, N, eps) {
 ## AD functions to come later possibly
 ######
 
-######
-## Top level sim function (wrapper)
-######
-
-##' @param deterministic
-##' @param mut_type 
-##' @param mut_var 
-##' @param Imat 
-##' @param eff_scale 
-##' @param progress 
+##' Top level sim function (wrapper)
+##' @param deterministic FIXME
+##' @param mut_type FIXME
+##' @param mut_var  FIXME
+##' @param Imat  FIXME
+##' @param eff_scale  FIXME
+##' @param progress FIXME
+##' @export 
 run_sim <- function(
    no_tradeoff          = TRUE
  , nt_mut_var_pos_trait = TRUE    ## For nearly neutral model are we tracking evolution in transmission (pos_trait) (TRUE) or recovery (neg_trait) (FALSE)
