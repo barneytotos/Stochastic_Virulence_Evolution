@@ -322,8 +322,107 @@ eff_calc    <- function (x, y, eff_scale) {
 }
 
 ######
-## For ODE models see other script "hpevosim/R/funs_SIS_determ.R"
+## For ODE models
 ######
+
+hpevosim_determ       <- function (t, y, parms) {
+   
+  Y <- list(
+   Svec = y[1]
+ , Imat = matrix(
+       data = y[-1]
+     , nrow = nrow(parms$beta)
+     , ncol = nrow(parms$beta)
+   )
+    )
+
+  n <- nrow(Y$Imat)
+  
+  with(as.list(c(parms, Y)), {
+  
+   dS <- - sum(beta * Imat * sum(Svec)) + ## loss to infection
+           sum((gamma + gamma0) * Imat)   ## gain due to recovery
+
+   dI <- (beta * Imat * sum(Svec)) -     ## gain due to infection
+         (gamma + gamma0) * Imat +       ## loss due to recovery
+     { 
+       if (with_mut) {
+ ## change due to mutation. Checks in what direction mutation will occur
+        tran.2D(
+          C   = Y$Imat
+        , D.x = mutlev * mutpos
+        , D.y = mutlev * mutneg
+        , v.x = mut_bias * mutpos
+        , v.y = mut_bias * mutneg
+        , dx  = 1
+        , dy  = 1)$dC
+     } else {
+        0
+     }
+       }
+
+       list(c(dS, dI))
+    }
+      
+      )
+    
+}
+
+calc_startvals_determ <- function (neg_trait0, pos_trait0, tuning, N, power_c, power_exp, mut_link_p, eff_scale, no_tradeoff, parasite_tuning, tradeoff_only) {
+
+## No resistance in SIS, but leaving structure for now...
+negtrait_r     <- mut_link_p$linkinv(neg_trait0) #- mut_link_h$linkfun(res0))
+
+## Also no tolerance in SIS, but leaving structure for now...
+negtrait_rt    <- negtrait_r # - mut_link_h$linkfun(tol0))
+
+if (!no_tradeoff) {
+if (parasite_tuning) {
+## Symmetrical matrix of efficiencies associated with combination of each parasite trait
+     effic       <- outer(neg_trait0, tuning, FUN = eff_calc, eff_scale = eff_scale)
+## From these calculate beta of each of the strains
+     joint_beta  <- sweep(effic, 2, power_tradeoff(alpha = negtrait_r, c = power_c, curv = power_exp), FUN = "*")
+} else {
+  if (!tradeoff_only) {
+   # effic <- matrix(data = tuning, nrow = 1, ncol = length(neg_trait0))
+    effic <- mut_link_p$linkinv(tuning)
+  } else {
+    ## Should refer to number of starting strains
+   # effic <- matrix(data = 1, nrow = 1, ncol = length(neg_trait0))
+    effic <- rep(1, length(neg_trait0))
+  }
+  
+joint_beta <- outer(effic, power_tradeoff(alpha = negtrait_r, c = power_c, curv = power_exp))
+
+## Create a negtrait matrix from the negtrait vector
+negtrait_mat <- matrix(
+  data = rep(negtrait_rt, each = length(tuning))
+, nrow = length(tuning), ncol = length(neg_trait0))
+  
+} 
+  
+} else {
+  
+effic       <- rep(1, length(neg_trait0))
+## Slightly funky here, but use neg_trait0 because it is set up with the same breaks as pos_trait
+joint_beta  <- outer(effic, mut_link_p$linkinv(neg_trait0))
+
+## Create a negtrait matrix from the negtrait vector
+negtrait_mat <- matrix(
+  data = rep(negtrait_rt, each = length(tuning))
+, nrow = length(tuning), ncol = length(neg_trait0)
+, byrow = T)
+
+}
+
+return(list(
+  intrinsic_postrait = effic
+, tuning             = tuning
+, joint_postrait     = joint_beta
+, joint_negtrait     = negtrait_mat
+  ))
+
+}
 
 ######
 ## power tradeoff and R0 functions
@@ -361,6 +460,7 @@ run_sim <- function(
     ## These first parameters are all about what type of simulation to run
      ## Note: hosts are always set to evolve. Crudely can force them never to evolve by just setting the probability to effectively 0
  , deterministic        = FALSE   ## Run an advection diffusion version?
+ , determ_mut           = TRUE    ## Allow mutation in the deterministic model? FALSE is essentially just for debugging
  , parasite_tuning      = TRUE    ## Reformulation where parasite efficiency is defined as matching tuning and aggressiveness
  , tradeoff_only        = FALSE   ## Stepping back to ignore tuning. Parasite just evolving according to the tradeoff curve
  , agg_eff_adjust       = FALSE   ## For efficiency model but not tuning model. Does an increase in parasite aggressiveness decrease efficiency (as a cost)
@@ -402,8 +502,8 @@ run_sim <- function(
     ## A few deterministic parameters
  , determ_length        = 200     ## length of time to run the deterministic model
  , determ_timestep      = 5       ## Lsoda parameter for RD model
- , lsoda_hini           = NULL    ## Lsoda parameter for RD model
- , Imat_seed            = NULL    ## Set up inside function, keep as null
+ , lsoda_hini           = 0.5       ## Lsoda parameter for RD model
+ , Imat_seed            = c(15, 55) ## Set up inside function, keep as null
   ) {
 
     if (round(N)!=N) {
@@ -467,7 +567,7 @@ run_sim <- function(
     
       startvals  <- calc_startvals_determ(
          neg_trait0, pos_trait0, tuning, N, power_c
-       , power_exp, mut_link_p, eff_scale, no_tradeoff, parasite_tuning)
+       , power_exp, mut_link_p, eff_scale, no_tradeoff, parasite_tuning, tradeoff_only)
       
       ## Also adjust Imat to capture how many total strains there are
       Imat       <- matrix(data = 0, ncol = length(neg_trait0), nrow = length(tuning))
@@ -520,10 +620,10 @@ run_sim <- function(
     ## Parameters structure (parallel vectors), so these can
      ## Be modified via function and passed back ...
     state      <- list(
-#      beta       = as.matrix(pos_trait0)
-#    , alpha      = as.matrix(neg_trait0)
-      pos_trait   = as.matrix(startvals$joint_postrait)
-    , neg_trait   = as.matrix(startvals$joint_negtrait)      
+#      beta      = as.matrix(pos_trait0)
+#    , alpha     = as.matrix(neg_trait0)
+      pos_trait  = as.matrix(startvals$joint_postrait)
+    , neg_trait  = as.matrix(startvals$joint_negtrait)      
     , lpostrait  = lpostrait
     , lnegtrait  = lnegtrait
 #   , hrtraitvec = hrtraitvec
@@ -770,51 +870,53 @@ run_sim <- function(
     ## Run the deterministic model
     } else {
       
-      ## parameter values and setup. *!* Will /need to move lots of this up into the parameter values outside of the sim, 
-       ## but for now just get it working.
+      ## convert state into a state list with only S and I and everything else put into params
+      state_determ <- c(
+        Svec = state$Svec
+      , Imat = state$Imat
+      )
       
-      N_strains     <- 500
-      ## Set up diffusion. This gives the proportion of each class that moves up and down.
-      mut_rate      <- 0.25
-      ## Can manipulate bias or not by adding advective velocity
-      biased_mut    <- 0.40
-      ## For tran.1D need to adjust mut rate so that the total loss takes into account the biased mut
-      mut_rate      <- mut_rate - biased_mut/2
+      ## Setup in what traits mutation occurs
+      if (no_tradeoff) {
+        if (nt_mut_var_pos_trait) {
+        mutpos <- 1 
+        mutneg <- 0
+        } else {
+        mutpos <- 0
+        mutneg <- 1        
+        }
+      } else {
+        mutpos <- 1 
+        mutneg <- 1      
+      }
       
-      epi.strains   <- setup.grid.1D(x.up = -4, x.down = 4, N = N_strains)
-      strains.beta  <- power_tradeoff(alpha = strains.alpha, c = power_c, curv = power_exp)
-      epi.length    <- 400
+      ## Adjust mutation rate for biased (directional) mutation
+      mu <- mu + mut_mean/2
       
-      ## Rest of the parameters
-      epi.params <- c(
-        mut_rate   = mut_rate
-        , biased_mut = biased_mut
-        , alpha      = list(strains.alpha)
-        , beta       = list(strains.beta)
-        , gamma      = 0.2
-        , d          = 0.01
-        , b          = 0.1
-        , N_strains  = N_strains
-        )
-
-      epi.start <- c(
-        S = c(999)
-      , I = c(1, rep(0, N_strains - 1))
-        )
+      params_determ <- list(
+        N         = N
+      , beta      = state$pos_trait
+      , gamma     = state$neg_trait
+      , gamma0    = gamma0
+      , mutlev    = mu
+      , with_mut  = determ_mut
+      , mut_bias  = mut_mean
+      , mutpos    = mutpos
+      , mutneg    = mutneg
+      )
       
-      ## Run deterministic model here
-      epi.out <- ode.1D(
-          y          = epi.start
-        , times      = seq(1, epi.length)
-        , func       = epi.fun.wm
-        , parms      = epi.params
-        , hini       = 0.01
-        , hmax       = 0.01
-        , method     = "lsoda"
-        , nspec      = 1
-        )
-
-        return(epi.out)
+    hpevosim_determ.out <- as.data.frame(
+      ode(
+    y        = state_determ
+  , times    = seq(0, determ_length, by = determ_timestep)
+  , func     = hpevosim_determ
+  , parms    = params_determ
+  , maxsteps = 5000
+  , hini     = lsoda_hini
+  , method   = 'rk4'
+    ))
+  
+        return(hpevosim_determ.out)
 
     }
 }

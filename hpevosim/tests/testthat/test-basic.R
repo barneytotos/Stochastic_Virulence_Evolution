@@ -1,6 +1,11 @@
 library(testthat)
 ## package will be loaded at this point
 
+## FIXME: Ran out of time to work on this for now. I know these should be elsewhere but 
+ ## dont have time now to figure out how the package is loading packages or w/e
+library(deSolve)
+library(ReacTran)
+
 sum_vars <- c("num_S","num_I","num_I_strains","mean_negtrait","sd_negtrait",
               "mean_postrait","sd_postrait","shannon")
 
@@ -41,4 +46,25 @@ expect_equal(m_nt,
                mean_postrait = 0.98985252, sd_postrait = 0.00909884, 
                shannon = 1.99599423)
              )
+
+## running again, this time with a deterministic model. 
+run_sim_params_determ <- transform(run_sim_params_nt,
+                                    deterministic = TRUE,
+                                    mut_mean = -0.02,
+                                    mu = 0.1,
+                                    gamma0 = 0.02)
+
+res_det <- do.call(run_sim,run_sim_params_determ)
+
+## FIXME: Need to improve the way these results are returned and the clarity of these checks.
+m_det <- colSums(res_det)
+names(m_det) <- NULL
+expect_equal(which(m_det != 0), c(1,2,seq(5403, 5502, by = 1)))
+
+m_det <- m_det[which(m_det != 0)]
+
+expect_equal(m_det[1:5], c(4100.0000, 9.8869994595, 0.5694942941, 0.6238255844, 0.7240922323))
+
+res_det_fp <- matrix(data = unlist(res_det[40, -c(1, 2)]), nrow = 100, ncol = 100, byrow = T)
+plot(rev(seq(0.00, 0.99, by = 0.01)), res_det_fp[55, ], xlab = "Beta", ylab = "Proportion") 
 

@@ -6,7 +6,7 @@ nt            <- 1e5
 num_points    <- 600 
 rptfreq       <- max(nt / num_points, 1) 
 num_runs      <- 5
-deterministic <- FALSE ## run the model via reaction-diffusion deterministic?
+deterministic <- TRUE ## run the model via reaction-diffusion deterministic?
 
 ## Need to cover a range of: (over a number of replicate runs)
  ## mutation frequency
