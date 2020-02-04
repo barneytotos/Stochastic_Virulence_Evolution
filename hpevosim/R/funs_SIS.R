@@ -305,56 +305,7 @@ return(list(
   ))
 
 }
-## Deterministic version for calculating start vals
-calc_startvals_determ <- function (neg_trait0, tuning, N, power_c, power_exp, mut_link_p, eff_scale) {
 
-## No resistance in SIS, but leaving structure for now...
-alpha_r     <- mut_link_p$linkinv(neg_trait0)# - mut_link_h$linkfun(res0))
-
-## Also no tolerance in SIS, but leaving structure for now...
-alpha_rt    <- mut_link_p$linkinv(mut_link_p$linkfun(alpha_r))# - mut_link_h$linkfun(tol0))
-
-## Symmetrical matrix of efficiencies associated with combination of each parasite trait
-effic       <- outer(neg_trait0, tuning, FUN = eff_calc, eff_scale = eff_scale)
-
-## From these calculate beta of each of the strains
-joint_beta  <- sweep(effic, 2, power_tradeoff(alpha = alpha_r, c = power_c, curv = power_exp), FUN = "*")
-
-return(list(
-  intrinsic_beta = effic
-, tuning         = tuning
-, joint_beta     = joint_beta
-, joint_alpha    = alpha_rt
-  ))
-
-}
-## For plotting, want to calculate the surface on a linear scale, which is easier to look at
-calc_startvals_determ_for_plotting <- function (neg_trait0, tuning, N, power_c, power_exp, mut_link_p, eff_scale) {
-
-## No resistance in SIS, but leaving structure for now...
-alpha_r     <- mut_link_p$linkinv(mut_link_p$linkfun(neg_trait0)) #- mut_link_h$linkfun(res0))
-
-## Also no tolerance in SIS, but leaving structure for now...
-alpha_rt    <- mut_link_p$linkinv(mut_link_p$linkfun(alpha_r)) #- mut_link_h$linkfun(tol0))
-
-## calculate efficiency based on the matching of tuning and aggressiveness
-eff_calc    <- function (x, y, eff_scale) {
-  exp(-(x - y)^2 / eff_scale)
-}
-## Symmetrical matrix of efficiencies associated with combination of each parasite trait
-effic       <- outer(mut_link_p$linkfun(neg_trait0), mut_link_p$linkfun(tuning), FUN = eff_calc, eff_scale = eff_scale)
-
-## From these calculate beta of each of the strains
-joint_beta  <- sweep(effic, 2, power_tradeoff(alpha = alpha_r, c = power_c, curv = power_exp), FUN = "*")
-
-return(list(
-  intrinsic_beta = effic
-, tuning         = tuning
-, joint_beta     = joint_beta
-, joint_alpha    = alpha_rt
-  ))
-
-}
 ##' Select binomial random deviates, return a matrix with appropriate dimensions
 ##' @param n total number of deviates
 ##' @param size binomial N
@@ -371,58 +322,8 @@ eff_calc    <- function (x, y, eff_scale) {
 }
 
 ######
-## RD functions
+## For ODE models see other script "hpevosim/R/funs_SIS_determ.R"
 ######
-## The same as the RD functions in funs_SIR.R but with no death here
-## SIS no mutation
-epi.fun.nm   <- function (t, y, parms) {
-  
-    with(c(as.list(parms))  , {
-  
-  S <- y[1] 
-  I <- y[2:(N_strains + 1)]
-  
-    ## dS / dt (Susceptible hosts)
-   dS <- - sum(beta * I) * S + sum(I * (alpha + gamma))
-    
-    ## dI / dt (Infected hosts of one of many types)
-   dI <- beta * I * S - I * (alpha + gamma)
-    
-  list(c(dS, dI))
-  
-    }
-      
-      )
-    
-}
-## SIS with mutation
-epi.fun.wm   <- function (t, y, parms) {
-  
-    with(c(as.list(parms))  , {
-  
-  S <- y[1] 
-  I <- y[2:(N_strains + 1)]
-  
-    ## dS / dt (Susceptible hosts)
-   dS <- - sum(beta * I) * S + sum(I * (alpha + gamma))
-    
-    ## dI / dt (Infected hosts of one of many types)
-   dI <- beta * I * S - I * (alpha + gamma) + 
-    tran.1D(
-       I
-     , D  = mut_rate
-     , v  = biased_mut
-     , dx = 1
-     , flux.down = 0
-     , flux.up   = 0)$dC
-    
-  list(c(dS, dI))
-  
-    }
-      
-      )    
-      
-}
 
 ######
 ## power tradeoff and R0 functions
@@ -558,22 +459,28 @@ run_sim <- function(
       neg_trait0     <- c(seq(
         mut_link_p$linkfun(0.01), mut_link_p$linkfun(0.99)
         , length = 100))
+      
+      ## Placeholder if the tuning model isn't being used
       tuning     <- c(seq(
         mut_link_p$linkfun(0.01), mut_link_p$linkfun(0.99)
         , length = 100))
+    
       startvals  <- calc_startvals_determ(
-         neg_trait0, tuning, res0, tol0, N, power_c
-       , power_exp, mut_link_p, eff_scale
-        )
-    #  pos_trait0      <- startvals$joint_postrait
-
+         neg_trait0, pos_trait0, tuning, N, power_c
+       , power_exp, mut_link_p, eff_scale, no_tradeoff, parasite_tuning)
+      
       ## Also adjust Imat to capture how many total strains there are
       Imat       <- matrix(data = 0, ncol = length(neg_trait0), nrow = length(tuning))
+      
         ## Later can set a parameter for which strains are the starting strains
         ## Imat[nrow(Imat), 1] <- N - sum(Svec)
         ## Imat[1, 1] <- N - sum(Svec)
+      
       ## With the deterministic rate model need to start at a high enough beta to overcome gamma0
-       Imat[Imat_seed[1], Imat_seed[2]] <- N - sum(Svec)
+       ## need to make this a parameter, but for now this seems ok...
+       Svec <- N - 10
+      
+       Imat[Imat_seed[1], Imat_seed[2]] <- N - Svec
 
       # Convert to proportions
        Imat <- Imat / N
@@ -599,13 +506,8 @@ run_sim <- function(
     }
     }
 
-    ## Alpha (intrinsic parasite mortality pressure)
-    if (!deterministic) {
-     #  lnegtrait  <- mut_link_p$linkfun(neg_trait0)
+    ## negtait being either recovery (normally gamma) or in the case of SIR, alpha (intrinsic parasite mortality pressure)
         lnegtrait  <- mut_link_p$linkfun(startvals$joint_negtrait)
-    } else {
-        lnegtrait  <- neg_trait0 
-    }
 
     ## Initial trait vectors for the host genotypes.
     ## Assumes all hosts start with identical trait value (for now)
@@ -821,6 +723,8 @@ run_sim <- function(
           if (((i / 50) %% 1) == 0) {
           print(paste(round(i/nrpt, 2)*100, "% Complete"))            
           }
+        } else {
+          
         }
         res[i,] <- c(
           i*rptfreq
@@ -900,7 +804,7 @@ run_sim <- function(
       
       ## Run deterministic model here
       epi.out <- ode.1D(
-        y          = epi.start
+          y          = epi.start
         , times      = seq(1, epi.length)
         , func       = epi.fun.wm
         , parms      = epi.params
@@ -914,3 +818,4 @@ run_sim <- function(
 
     }
 }
+

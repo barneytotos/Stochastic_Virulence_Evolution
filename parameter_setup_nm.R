@@ -29,8 +29,8 @@ params <- expand.grid(
   ## (FALSE, FALSE, FALSE) for _no_ parastie beta setback with evo change in alpha
   ## (FALSE, FALSE, TRUE) for parastie beta setback with evo change in alpha
   ## for nearly neutral see Ben's results and use Ben's script
- , parasite_tuning     = FALSE
- , tradeoff_only       = TRUE
+ , parasite_tuning     = TRUE
+ , tradeoff_only       = FALSE
  , agg_eff_adjust      = FALSE
  , mut_var             = "beta"
 ## Need to convert this to a rate of diffusion if deterministic == TRUE

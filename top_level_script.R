@@ -39,7 +39,7 @@ source("ggplot_theme.R")
 if (host_mort) {
     source("funs_SIR.R")
 } else {
-    source("funs_SIS.R")   
+    source("hpevosim/R/funs_SIS.R")   
 }
 
 #####
