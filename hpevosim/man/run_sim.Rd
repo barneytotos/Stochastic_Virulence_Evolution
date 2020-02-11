@@ -9,6 +9,7 @@ run_sim(
   nt_mut_var_pos_trait = TRUE,
   pos_trait0 = 0.005,
   deterministic = FALSE,
+  determ_mut = TRUE,
   parasite_tuning = TRUE,
   tradeoff_only = FALSE,
   agg_eff_adjust = FALSE,
@@ -38,8 +39,8 @@ run_sim(
   debug4_val = 1,
   determ_length = 200,
   determ_timestep = 5,
-  lsoda_hini = NULL,
-  Imat_seed = NULL
+  lsoda_hini = 0.5,
+  Imat_seed = c(15, 55)
 )
 }
 \arguments{

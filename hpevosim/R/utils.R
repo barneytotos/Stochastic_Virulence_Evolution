@@ -1,4 +1,5 @@
 ## from lme4; construct a list with names equal to deparse() by default
+#' @importFrom stats setNames
 namedList <- function (...) 
 {
     L <- list(...)
@@ -11,8 +12,9 @@ namedList <- function (...)
 }
 
 ##' @export
+##' @importFrom ggplot2 ggplot aes geom_line geom_ribbon
 plot.hpevosim <- function(x, ..., type="postrait") {
-    require("ggplot2")
+    time <- mean_postrait <- sd_postrait <- NULL ## global variable check
     switch(type,
            postrait= (ggplot(x, aes(time, y=mean_postrait,
                                     ymin=mean_postrait-sd_postrait,

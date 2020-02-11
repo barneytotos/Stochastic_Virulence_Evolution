@@ -27,11 +27,14 @@
 ## Accessory Functions
 ######
 
-get_mut_p        <- function (orig_trait, no_tradeoff, nt_mut_var_pos_trait, power_c, power_exp, mut_link_p, mut_mean
-  , mut_sd, mut_type = "shift", agg_eff_adjust, eff_hit, parasite_tuning, tradeoff_only) {
+#' @importFrom stats rnorm
+get_mut_p        <- function (orig_trait, no_tradeoff, nt_mut_var_pos_trait
+                            , power_c, power_exp, mut_link_p, mut_mean
+                            , mut_sd, mut_type = "shift"
+                            , agg_eff_adjust, eff_hit
+                            , parasite_tuning, tradeoff_only) {
 
   if (no_tradeoff) {
-    
     if (nt_mut_var_pos_trait) {
        pos_trait_adj <- rnorm(length(orig_trait$pos_trait), mut_mean, mut_sd)
        new_trait_pos <- orig_trait$pos_trait + pos_trait_adj   
@@ -213,7 +216,9 @@ do_extinct       <- function (state, extinct, parasite) {
     return(state)
 }
 ## This function is borderline hideous but it does what I want it to do (multinomial draws and return proper
- ## matrix structure). All ears for a better way to write this
+## matrix structure). All ears for a better way to write this
+
+#' @importFrom stats rmultinom
 get_inf          <- function (Svec, uninf, Imat, beta) {
 
 matrix(
@@ -312,6 +317,7 @@ return(list(
 ##' @param prob binomial probability
 ##' @param nrow number of rows
 ##' @param ncol number of cols
+##' @importFrom stats rbinom
 ## FIXME set default to ncol=1 ? eliminate nrow since determined by ncol? can we use dim(n) if it exists?
 rbinom_mat  <- function (n, size, prob, nrow, ncol) {
   matrix(rbinom(n, size, prob), nrow = nrow, ncol = ncol)
@@ -452,6 +458,7 @@ power_R0_grad  <- function (alpha, c, curv, gamma, N, eps) {
 ##' @param Imat  FIXME
 ##' @param eff_scale  FIXME
 ##' @param progress FIXME
+##' @importFrom stats make.link quantile sd
 ##' @export 
 run_sim <- function(
    no_tradeoff          = TRUE
@@ -468,7 +475,7 @@ run_sim <- function(
  , R0_init              = 2       ## >1, not actually used for tuning model
  , neg_trait0           = 0.03    ## Either host recovery rate to the parasite (SIS model) or parasite-induced host mortality (SIR model). Default to main thesis result start
  , tune0                = 0.97    ## Starting tuning. Give a value, but only used if parasite_tuning == TRUE. Default to main thesis result start
- , gamma0               = 0.2     ## Background host recovery (immune pressure or however you want to think of it)
+ , gamma0               = 0.2     ## Background host recovery (immune pressure ovr however you want to think of it)
                                   ## (Can set to zero if using non-tradeoff model)
  , N                    = 200     ## Host population size, integer > 0
  , mu                   = 0.01    ## Mutation probability, > 0
@@ -676,8 +683,9 @@ run_sim <- function(
                 ## Fill i and j in manually after checking output after an error is encountered
                 if (debug2) {
                   print(paste(i, j, sep = "  -  "))
-                  print(str(state$Svec))
-                  assign("state_check", state, .GlobalEnv)
+                  print(utils::str(state$Svec))
+                  ## causes pkg NOTE
+                  ## assign("state_check", state, .GlobalEnv)
                   if (i == 20 & j == 20) browser()
                 }
 
@@ -906,7 +914,7 @@ run_sim <- function(
       )
       
     hpevosim_determ.out <- as.data.frame(
-      ode(
+      deSolve::ode(
     y        = state_determ
   , times    = seq(0, determ_length, by = determ_timestep)
   , func     = hpevosim_determ
