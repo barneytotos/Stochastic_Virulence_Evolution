@@ -354,7 +354,7 @@ hpevosim_determ       <- function (t, y, parms) {
      { 
        if (with_mut) {
  ## change due to mutation. Checks in what direction mutation will occur
-        tran.2D(
+           ReacTran::tran.2D(
           C   = Y$Imat
         , D.x = mutlev * mutpos
         , D.y = mutlev * mutneg

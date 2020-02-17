@@ -1,10 +1,8 @@
+## library(hpevosim)
 library(testthat)
-## package will be loaded at this point
 
-## FIXME: Ran out of time to work on this for now. I know these should be elsewhere but 
- ## dont have time now to figure out how the package is loading packages or w/e
-library(deSolve)
-library(ReacTran)
+## FIXME: add context() statements
+## FIXME: shorten runs to speed up tests?
 
 sum_vars <- c("num_S","num_I","num_I_strains","mean_negtrait","sd_negtrait",
               "mean_postrait","sd_postrait","shannon")
@@ -47,7 +45,9 @@ expect_equal(m_nt,
                shannon = 1.99599423)
              )
 
-## running again, this time with a deterministic model. 
+## running again, this time with a deterministic model.
+## evolve only in beta
+## imatseed
 run_sim_params_determ <- transform(run_sim_params_nt,
                                     deterministic = TRUE,
                                     mut_mean = -0.02,
@@ -55,16 +55,65 @@ run_sim_params_determ <- transform(run_sim_params_nt,
                                     gamma0 = 0.02)
 
 res_det <- do.call(run_sim,run_sim_params_determ)
+## FIXME: progress bar?
 
 ## FIXME: Need to improve the way these results are returned and the clarity of these checks.
 m_det <- colSums(res_det)
+nt <- nrow(res_det)
+nI_cat <- sqrt(ncol(res_det)-2)
 names(m_det) <- NULL
 expect_equal(which(m_det != 0), c(1,2,seq(5403, 5502, by = 1)))
 
 m_det <- m_det[which(m_det != 0)]
 
-expect_equal(m_det[1:5], c(4100.0000, 9.8869994595, 0.5694942941, 0.6238255844, 0.7240922323))
+expect_equal(m_det[1:5],
+        c(4100.0000, 9.8869994595, 0.5694942941, 0.6238255844, 0.7240922323))
 
-res_det_fp <- matrix(data = unlist(res_det[40, -c(1, 2)]), nrow = 100, ncol = 100, byrow = T)
-plot(rev(seq(0.00, 0.99, by = 0.01)), res_det_fp[55, ], xlab = "Beta", ylab = "Proportion") 
+
+image(aa[,,55])
+res_det_fp <- matrix(data = unlist(res_det[nt, -c(1, 2)]),
+                     nrow = nI_cat, ncol = nI_cat, byrow = TRUE)
+
+## row 55 is initial infected genotype
+init_gamma_cat <- eval(formals(run_sim)$Imat_seed)[2]
+beta_prob <- rev(seq(0.00, 0.99, by = 0.01))
+plot(beta_prob,
+     res_det_fp[init_gamma_cat, ],
+     xlab = "Beta", ylab = "Proportion") 
+
+if (require(Matrix)) {
+    image(Matrix::Matrix(res_det[,-(1:2)]
+}
+## base-R plotting
+aa <- array(unlist(res_det[,-(1:2)]),c(41,100,100))
+dimnames(aa) <- list(time=0:40, ## not really
+                     beta=beta_prob,
+                     gamma=beta_prob) ## the same in this case
+bmat <- aa[,,init_gamma_cat]
+bmat_flip <- bmat[,rev(seq(ncol(bmat)))]
+
+par(las=1)
+image(y=as.numeric(colnames(bmat_flip)),
+      z=bmat_flip, xlab="time",ylab="beta prob")
+
+## normalize; if you normalize by column (i.e. distribution across time)
+## it looks weird and interesting but maybe meaningless)
+bmat_flip_norm <- sweep(bmat_flip,MARGIN=1,rowSums(bmat_flip),"/")
+image(y=as.numeric(colnames(bmat_flip)),
+      z=bmat_flip_norm, xlab="time",ylab="beta prob",
+      zlim=c(0,0.4) ## restrict scale so not overwhelmed by initial
+                    ## concentrations (could use log10(0.01+x))
+      )
+
+if (FALSE) {
+    library(rgl)
+    persp3d(y=as.numeric(colnames(bmat_flip)),
+            z=bmat_flip_norm, xlab="time",ylab="beta prob",
+            zlim=c(0,0.4), ## restrict scale so not overwhelmed by initial
+            ## concentrations (could use log10(0.01+x))
+            col="gray"
+            )
+}
+
+## could do this in tidyverse instead ...
 

@@ -6,5 +6,6 @@ Authors@R: c(person("Kain","Morgan",email="morganpkain@gmail.com",role=c("aut","
 	   person("Bolker","Ben", role="ctb"))	   
 License: GPL
 RoxygenNote: 7.0.2
-Imports: vegan, ggplot2, deSolve
+Imports: vegan, ggplot2, deSolve, ReacTran
+Suggests: Matrix, testthat
 Encoding: UTF-8
