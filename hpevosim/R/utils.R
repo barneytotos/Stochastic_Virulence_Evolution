@@ -24,5 +24,5 @@ plot.hpevosim <- function(x, ..., type="postrait") {
            ) ## postrait
            ) ## switch
 }
-    
+
 

@@ -356,10 +356,10 @@ hpevosim_determ       <- function (t, y, parms) {
  ## change due to mutation. Checks in what direction mutation will occur
            ReacTran::tran.2D(
           C   = Y$Imat
-        , D.x = mutlev * mutpos
-        , D.y = mutlev * mutneg
-        , v.x = mut_bias * mutpos
-        , v.y = mut_bias * mutneg
+        , D.x = mutlev * mutneg
+        , D.y = mutlev * mutpos
+        , v.x = mut_bias * mutneg
+        , v.y = mut_bias * mutpos
         , dx  = 1
         , dy  = 1)$dC
      } else {
@@ -374,10 +374,10 @@ hpevosim_determ       <- function (t, y, parms) {
     
 }
 
-calc_startvals_determ <- function (neg_trait0, pos_trait0, tuning, N, power_c, power_exp, mut_link_p, eff_scale, no_tradeoff, parasite_tuning, tradeoff_only) {
+calc_startvals_determ <- function (neg_trait, pos_trait, N, power_c, power_exp, mut_link_p, eff_scale, no_tradeoff, parasite_tuning, tradeoff_only) {
 
 ## No resistance in SIS, but leaving structure for now...
-negtrait_r     <- mut_link_p$linkinv(neg_trait0) #- mut_link_h$linkfun(res0))
+negtrait_r     <- mut_link_p$linkinv(neg_trait) #- mut_link_h$linkfun(res0))
 
 ## Also no tolerance in SIS, but leaving structure for now...
 negtrait_rt    <- negtrait_r # - mut_link_h$linkfun(tol0))
@@ -385,47 +385,46 @@ negtrait_rt    <- negtrait_r # - mut_link_h$linkfun(tol0))
 if (!no_tradeoff) {
 if (parasite_tuning) {
 ## Symmetrical matrix of efficiencies associated with combination of each parasite trait
-     effic       <- outer(neg_trait0, tuning, FUN = eff_calc, eff_scale = eff_scale)
+     effic       <- outer(neg_trait, pos_trait, FUN = eff_calc, eff_scale = eff_scale)
 ## From these calculate beta of each of the strains
      joint_beta  <- sweep(effic, 2, power_tradeoff(alpha = negtrait_r, c = power_c, curv = power_exp), FUN = "*")
 } else {
   if (!tradeoff_only) {
-   # effic <- matrix(data = tuning, nrow = 1, ncol = length(neg_trait0))
-    effic <- mut_link_p$linkinv(tuning)
+    effic <- mut_link_p$linkinv(pos_trait)
   } else {
-    ## Should refer to number of starting strains
-   # effic <- matrix(data = 1, nrow = 1, ncol = length(neg_trait0))
-    effic <- rep(1, length(neg_trait0))
+    effic <- rep(1, length(neg_trait))
   }
   
 joint_beta <- outer(effic, power_tradeoff(alpha = negtrait_r, c = power_c, curv = power_exp))
 
 ## Create a negtrait matrix from the negtrait vector
 negtrait_mat <- matrix(
-  data = rep(negtrait_rt, each = length(tuning))
-, nrow = length(tuning), ncol = length(neg_trait0))
+  data = rep(negtrait_rt, each = length(pos_trait))
+, nrow = length(pos_trait), ncol = length(neg_trait))
   
 } 
   
 } else {
   
-effic       <- rep(1, length(neg_trait0))
+effic       <- rep(1, length(neg_trait))
 ## Slightly funky here, but use neg_trait0 because it is set up with the same breaks as pos_trait
-joint_beta  <- outer(effic, mut_link_p$linkinv(neg_trait0))
+joint_beta  <- outer(effic, mut_link_p$linkinv(neg_trait))
 
 ## Create a negtrait matrix from the negtrait vector
 negtrait_mat <- matrix(
-  data = rep(negtrait_rt, each = length(tuning))
-, nrow = length(tuning), ncol = length(neg_trait0)
+  data = rep(negtrait_rt, each = length(pos_trait))
+, nrow = length(pos_trait), ncol = length(neg_trait)
 , byrow = T)
 
 }
 
 return(list(
   intrinsic_postrait = effic
-, tuning             = tuning
 , joint_postrait     = joint_beta
 , joint_negtrait     = negtrait_mat
+## Store what is evolving depending on model choice (for plotting)
+, postrait_evo       = pos_trait
+, negtrait_evo       = neg_trait
   ))
 
 }
@@ -446,6 +445,64 @@ power_R0_grad  <- function (alpha, c, curv, gamma, N, eps) {
  (power_R0(alpha, c, curv, gamma, N) + power_R0_slope(alpha + eps, c, curv, gamma, N)) / 
    power_R0(alpha, c, curv, gamma, N) 
 }
+
+######
+## tidy for plotting
+######
+
+tidy.deSolve <- function(x, startvals, params, mut_link_p, 
+  no_tradeoff, parasite_tuning, tradeoff_only, power_c, power_exp, ...) {
+  t <- x[, 1]
+  x <- x[, -c(1, 2)]
+  
+  x.m <- array(data = 0
+   , dim = c(
+      nrow(startvals$joint_postrait)
+    , ncol(startvals$joint_postrait)
+    , nrow(x)
+    ))
+    
+## Would like to do this without a loop but not sure how. Just adding 'data = x' to the above
+ ## array doesn't fill it in in the appropriate order (nor with dim's arranged to nrow(x), , )
+for (i in 1:dim(x.m)[3]) {
+  x.m[,,i] <- matrix(data = x[i, ], nrow = 100, ncol = 100, byrow = F)
+}
+  
+## Give the rows and columns (the two traits that are evolving) names
+dimnames(x.m) <- list(
+  mut_link_p$linkinv(startvals$negtrait_evo)
+, mut_link_p$linkinv(startvals$postrait_evo)
+, t
+)
+
+x.l        <- melt(x.m)  
+names(x.l) <- c("negtrait", "postrait", "time", "abundance") 
+
+## Add in index for creating geom_raster
+x.l <- mutate(x.l
+  , negtrait_index = as.numeric(as.factor(negtrait))
+  , postrait_index = as.numeric(as.factor(postrait))
+  )
+
+## Calculate gamma and beta from the two evolving traits depending on the model
+if (!no_tradeoff) {
+if (parasite_tuning) {
+  x.l <- mutate(x.l, effic = eff_calc(negtrait, postrait, eff_scale)) %>%
+    mutate(beta = effic * power_tradeoff(alpha = negtrait, c = power_c, curv = power_exp))
+} else {
+  if (!tradeoff_only) {
+  x.l <- mutate(x.l, beta = postrait * power_tradeoff(alpha = negtrait, c = power_c, curv = power_exp)) 
+  } else {
+  x.l <- mutate(x.l, beta = power_tradeoff(alpha = negtrait, c = power_c, curv = power_exp))
+  }
+} 
+} else {
+  x.l <- mutate(x.l, beta = postrait) 
+}
+
+return(x.l)
+
+}    
 
 ######
 ## AD functions to come later possibly
@@ -510,7 +567,6 @@ run_sim <- function(
  , determ_length        = 200     ## length of time to run the deterministic model
  , determ_timestep      = 5       ## Lsoda parameter for RD model
  , lsoda_hini           = 0.5       ## Lsoda parameter for RD model
- , Imat_seed            = c(15, 55) ## Set up inside function, keep as null
   ) {
 
     if (round(N)!=N) {
@@ -563,21 +619,28 @@ run_sim <- function(
     
     } else {
 
-      neg_trait0     <- c(seq(
+      ## Stands for gamma in all models except for tuning where it stands for some tuning parameter A which is used
+       ## jointly with pos_trait below to calculate both gamma and beta
+      neg_trait     <- c(seq(
         mut_link_p$linkfun(0.01), mut_link_p$linkfun(0.99)
         , length = 100))
       
-      ## Placeholder if the tuning model isn't being used
-      tuning     <- c(seq(
+      ## The positive trait that is evolving to control beta depending on the model
+        ## Directly beta if no tradeoff 
+         ## A placeholder if tradeoff only (beta depends only on gamma)
+          ## efficiency for efficiency model (beta is a derived quantity based on gamma and efficiency and the tradeoff curve)
+           ## tuning for tuning model (beta is a derived quantity)
+      pos_trait     <- c(seq(
         mut_link_p$linkfun(0.01), mut_link_p$linkfun(0.99)
         , length = 100))
     
       startvals  <- calc_startvals_determ(
-         neg_trait0, pos_trait0, tuning, N, power_c
-       , power_exp, mut_link_p, eff_scale, no_tradeoff, parasite_tuning, tradeoff_only)
+         neg_trait, pos_trait, N, power_c
+       , power_exp, mut_link_p, eff_scale, no_tradeoff
+       , parasite_tuning, tradeoff_only)
       
       ## Also adjust Imat to capture how many total strains there are
-      Imat       <- matrix(data = 0, ncol = length(neg_trait0), nrow = length(tuning))
+      Imat       <- matrix(data = 0, ncol = length(neg_trait), nrow = length(pos_trait))
       
         ## Later can set a parameter for which strains are the starting strains
         ## Imat[nrow(Imat), 1] <- N - sum(Svec)
@@ -585,9 +648,15 @@ run_sim <- function(
       
       ## With the deterministic rate model need to start at a high enough beta to overcome gamma0
        ## need to make this a parameter, but for now this seems ok...
-       Svec <- N - 10
+
+      Istart    <- max(1, round(N*(1 - 1/R0_init)))
+      Svec      <- N - Istart
+      Imat_seed <- c(
+        which(abs(neg_trait - mut_link_p$linkfun(neg_trait0)) == min(abs(neg_trait  - mut_link_p$linkfun(neg_trait0))))
+      , which(abs(pos_trait - mut_link_p$linkfun(pos_trait0)) == min(abs(pos_trait  - mut_link_p$linkfun(pos_trait0))))
+        )
       
-       Imat[Imat_seed[1], Imat_seed[2]] <- N - Svec
+      Imat[Imat_seed[1], Imat_seed[2]] <- N - Svec
 
       # Convert to proportions
        Imat <- Imat / N
@@ -606,6 +675,7 @@ run_sim <- function(
         if (!deterministic) {
             lpostrait  <- mut_link_p$linkfun(startvals$tuning)     
         } else {
+            ## FIXME: This is likely to have broken determ = F
             lpostrait  <- startvals$tuning 
         }
     } else {
@@ -912,9 +982,8 @@ run_sim <- function(
       , mutpos    = mutpos
       , mutneg    = mutneg
       )
-      
-    hpevosim_determ.out <- as.data.frame(
-      deSolve::ode(
+    
+    hpevosim_determ.out <- deSolve::ode(
     y        = state_determ
   , times    = seq(0, determ_length, by = determ_timestep)
   , func     = hpevosim_determ
@@ -922,9 +991,21 @@ run_sim <- function(
   , maxsteps = 5000
   , hini     = lsoda_hini
   , method   = 'rk4'
-    ))
-  
-        return(hpevosim_determ.out)
+    )
+    
+hpevosim_determ.out.t <- tidy.deSolve(
+     x               = hpevosim_determ.out
+   , startvals       = startvals
+   , params          = params_determ
+   , mut_link_p      = mut_link_p
+   , no_tradeoff     = no_tradeoff
+   , parasite_tuning = parasite_tuning
+   , tradeoff_only   = tradeoff_only
+   , power_c         = power_c
+   , power_exp       = power_exp
+  )
+
+    return(hpevosim_determ.out.t)
 
     }
 }

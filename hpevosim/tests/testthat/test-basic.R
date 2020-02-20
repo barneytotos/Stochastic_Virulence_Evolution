@@ -52,49 +52,61 @@ run_sim_params_determ <- transform(run_sim_params_nt,
                                     deterministic = TRUE,
                                     mut_mean = -0.02,
                                     mu = 0.1,
-                                    gamma0 = 0.02)
+                                    gamma0 = 0.02,
+                                    pos_trait0 = 0.3,
+                                    neg_trait0 = 0.05
+#  , no_tradeoff   = F
+#  , tradeoff_only = F
+  )
 
-res_det <- do.call(run_sim,run_sim_params_determ)
-## FIXME: progress bar?
+res_det  <- do.call(run_sim,run_sim_params_determ)
+## FIXME: progress bar? [Put inside ODE? Doesn't seem to be an option in ode()]
 
-## FIXME: Need to improve the way these results are returned and the clarity of these checks.
-m_det <- colSums(res_det)
-nt <- nrow(res_det)
-nI_cat <- sqrt(ncol(res_det)-2)
-names(m_det) <- NULL
-expect_equal(which(m_det != 0), c(1,2,seq(5403, 5502, by = 1)))
+## Slightly awkward way to do this. Probably best to export? Idea here was that 
+ ## the user-specified starting trait would be slotted into the closest bin for the 
+  ## deterministic model, but a bit awkward to rely on the output. Just calc from start, but then have to check
+   ## abs(round(...))
+init_gamma_inf <- res_det %>% 
+  filter(time == 0, abundance > 0) %>% 
+  dplyr::select(negtrait) %>%
+  unlist()
 
-m_det <- m_det[which(m_det != 0)]
+## This round() is annoying
+expect_equal(
+ (res_det %>% 
+  filter(time == 40, round(negtrait, 7) == round(init_gamma_inf, 7)) %>% 
+  summarize(
+    total_I   = sum(abundance)
+  , mean_beta = sum(abundance * beta)
+  ) %>% unlist())
+, c(total_I = 0.7727769, mean_beta = 0.2351861)
+  )
 
-expect_equal(m_det[1:5],
-        c(4100.0000, 9.8869994595, 0.5694942941, 0.6238255844, 0.7240922323))
+whichtime <- 80
 
+## FIXME: Convert x and y to actual trait values
+ggplot(res_det %>% filter(time == whichtime)
+  , aes(x = postrait_index, y = negtrait_index, z = abundance)) + 
+   scale_fill_gradient(low = "white", high = "red4") +
+   geom_raster(aes(fill = abundance)) +
+  xlab("Transmission Rate") + 
+  ylab("Recovery Rate")
 
-image(aa[,,55])
-res_det_fp <- matrix(data = unlist(res_det[nt, -c(1, 2)]),
-                     nrow = nI_cat, ncol = nI_cat, byrow = TRUE)
+ggplot(res_det %>% filter(time == whichtime)
+  , aes(postrait, abundance)) + 
+    geom_line() +
+  xlab("Transmission Rate") + 
+  ylab("Density")
+  
+## Plotting sqrt() so that we can see it better
+ggplot(res_det %>% filter(round(negtrait, 7) == round(init_gamma_inf, 7))
+  , aes(x = time, y = postrait_index, z = abundance)) +
+   scale_fill_gradient(low = "white", high = "red4") +
+   geom_raster(aes(fill = sqrt(abundance))) +
+  xlab("Time") + 
+  ylab("Recovery Rate")
 
-## row 55 is initial infected genotype
-init_gamma_cat <- eval(formals(run_sim)$Imat_seed)[2]
-beta_prob <- rev(seq(0.00, 0.99, by = 0.01))
-plot(beta_prob,
-     res_det_fp[init_gamma_cat, ],
-     xlab = "Beta", ylab = "Proportion") 
-
-if (require(Matrix)) {
-    image(Matrix::Matrix(res_det[,-(1:2)]
-}
-## base-R plotting
-aa <- array(unlist(res_det[,-(1:2)]),c(41,100,100))
-dimnames(aa) <- list(time=0:40, ## not really
-                     beta=beta_prob,
-                     gamma=beta_prob) ## the same in this case
-bmat <- aa[,,init_gamma_cat]
-bmat_flip <- bmat[,rev(seq(ncol(bmat)))]
-
-par(las=1)
-image(y=as.numeric(colnames(bmat_flip)),
-      z=bmat_flip, xlab="time",ylab="beta prob")
+#### Some old stuff >> to incorporate
 
 ## normalize; if you normalize by column (i.e. distribution across time)
 ## it looks weird and interesting but maybe meaningless)
@@ -114,6 +126,4 @@ if (FALSE) {
             col="gray"
             )
 }
-
-## could do this in tidyverse instead ...
 
