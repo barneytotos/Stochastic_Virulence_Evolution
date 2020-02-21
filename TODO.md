@@ -1,11 +1,15 @@
 ## Morgan
 
-* Create slurm job array bash script for sending jobs to Stanford cluster
-* List of needed naming updates still uncludes SIR vs host_mort vs host resistance and tolerance evolution or no
-* ~~get deterministic stuff working~~
-	* Partially complete (see commit message on Tues Feb 4 at 12:10 or so) but left behind a decent bit of technical debt (tidying parameter values and testing more than the one test in the testing script)
-* figure out/document why beta probs are flipped (correct tests/plots if necessary)
-* make sure metadata (beta, gamma values, beta/gamma scaling, etc.; maybe even parameter values?) get attached to sim output (attributes, or make an S3 object)
+* Deterministic cleaned up a bit (see commit Feb 20), but still have some lingering code to clean
+	* tuning won't work currently
+	* some lingering "tuning" places where it shouldn't be
+	* Still need to check ability for the deterministic model to run tradeoff and efficiency 
+	* make sure metadata (beta, gamma values, beta/gamma scaling, etc.; maybe even parameter values?) get attached to sim output (attributes, or make an S3 object)
+		* Some progress here but still need to update bookkeeping for the deterministic model (this stuff is returned for stochastic == T)
+* Brainstorm what plots we need and what code updates are needed to get us there
+	* Create slurm job array bash script for sending these jobs to Stanford cluster
+* Some residual bad names that keep popping up. Cleaning these as I go
+
 
 ## Someone
 
