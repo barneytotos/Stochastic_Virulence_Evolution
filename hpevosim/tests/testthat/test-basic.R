@@ -47,7 +47,6 @@ expect_equal(m_nt,
 
 ## running again, this time with a deterministic model.
 ## evolve only in beta
-## imatseed
 run_sim_params_determ <- transform(run_sim_params_nt,
                                     deterministic = TRUE,
                                     mut_mean = -0.02,
@@ -60,6 +59,9 @@ run_sim_params_determ <- transform(run_sim_params_nt,
   )
 
 res_det  <- do.call(run_sim,run_sim_params_determ)
+## Throwing away the parameters, but don't need them for now
+## FIXME?: Better integration of parameters 
+res_det  <- res_det[["hpevosim_determ.out"]]
 ## FIXME: progress bar? [Put inside ODE? Doesn't seem to be an option in ode()]
 
 ## Slightly awkward way to do this. Probably best to export? Idea here was that 
@@ -83,14 +85,22 @@ expect_equal(
   )
 
 whichtime <- 80
+whichtimes <- c(40, 200)
 
 ## FIXME: Convert x and y to actual trait values
 ggplot(res_det %>% filter(time == whichtime)
   , aes(x = postrait_index, y = negtrait_index, z = abundance)) + 
    scale_fill_gradient(low = "white", high = "red4") +
    geom_raster(aes(fill = abundance)) +
+  xlab("Transmission Rate (index)") + 
+  ylab("Recovery Rate (index)")
+
+ggplot(res_det %>% filter(round(negtrait, 7) == round(init_gamma_inf, 7), (time == whichtimes[1] | time == whichtimes[2]))
+  , aes(beta, abundance, colour = as.factor(time))) + 
+    geom_line() +
+  scale_color_brewer(palette = "Dark2", name = "Time") +
   xlab("Transmission Rate") + 
-  ylab("Recovery Rate")
+  ylab("Density") 
 
 ggplot(res_det %>% filter(time == whichtime)
   , aes(postrait, abundance)) + 
@@ -104,26 +114,90 @@ ggplot(res_det %>% filter(round(negtrait, 7) == round(init_gamma_inf, 7))
    scale_fill_gradient(low = "white", high = "red4") +
    geom_raster(aes(fill = sqrt(abundance))) +
   xlab("Time") + 
-  ylab("Recovery Rate")
+  ylab("Transmission Rate (index)")
 
-#### Some old stuff >> to incorporate
+library(rgl)
 
-## normalize; if you normalize by column (i.e. distribution across time)
-## it looks weird and interesting but maybe meaningless)
-bmat_flip_norm <- sweep(bmat_flip,MARGIN=1,rowSums(bmat_flip),"/")
-image(y=as.numeric(colnames(bmat_flip)),
-      z=bmat_flip_norm, xlab="time",ylab="beta prob",
-      zlim=c(0,0.4) ## restrict scale so not overwhelmed by initial
-                    ## concentrations (could use log10(0.01+x))
-      )
+## Problems with "increasing x and y values expected" using persp3d. Don't feel like taking the time to figure it out right now
+with(res_det %>% filter(round(negtrait, 7) == round(init_gamma_inf, 7)) %>% droplevels()
+  , plot3d(
+  x = time, y = postrait_index, z = abundance, xlab = "time", ylab = "beta prob",
+  zlim = c(0, 0.4), col = "black"
+))
 
-if (FALSE) {
-    library(rgl)
-    persp3d(y=as.numeric(colnames(bmat_flip)),
-            z=bmat_flip_norm, xlab="time",ylab="beta prob",
-            zlim=c(0,0.4), ## restrict scale so not overwhelmed by initial
-            ## concentrations (could use log10(0.01+x))
-            col="gray"
-            )
-}
+## running again, this time with a tradeoff curve.
+## evolve only in gamma, beta gets pulled along according to the tradeoff curve
+run_sim_params_determ <- transform(run_sim_params_nt,
+                                    deterministic = TRUE,
+  ## Need to be quite careful with parameter values. Large difference in what values make sense between stochastic and deterministic
+                                    power_c = 2,
+                                    mut_mean = -0.02,
+                                    mu = 0.1,
+                                    gamma0 = 0.02,
+                                    pos_trait0 = 0.3,
+                                    neg_trait0 = 0.05,
+                                    no_tradeoff = F, 
+                                    tradeoff_only = T
+  )
 
+debug(run_sim)
+
+res_det  <- do.call(run_sim,run_sim_params_determ)
+res_det  <- res_det[["hpevosim_determ.out"]]
+## Semi-confusing because of differences between models, but with tradeoff only "postrait" isn't evolving, 
+ ## so pull out the starting value of postrait, then later can plot negtrait and beta, which is just 
+  ## a function of negtrait in this model
+init_beta_inf <- res_det %>% 
+  filter(time == 0, abundance > 0) %>% 
+  dplyr::select(postrait) %>%
+  unlist()
+
+expect_equal(
+ (res_det %>% 
+  filter(time == 40, round(postrait, 7) == round(init_beta_inf, 7)) %>% 
+  summarize(
+    total_I   = sum(abundance)
+  , mean_beta = sum(abundance * beta)
+  ) %>% unlist())
+, c(total_I = 0.9070394, mean_beta = 0.6510977)
+  )
+
+whichtime <- 80
+whichtimes <- c(40, 200)
+
+## When evolving only in one trait (along the tradeoff curve) the state-space plot is pretty meaningless, so skip it
+ ## Transmission rate has been pre-calculated inside of tidy.deSolve inside of run_sim using the tradeoff curve parameters
+ggplot(res_det %>% filter(time == whichtimes, round(postrait, 7) == round(init_beta_inf, 7))
+  , aes(beta, abundance, colour = as.factor(time))) + 
+    geom_line() +
+  scale_color_brewer(palette = "Dark2", name = "Time") +
+  xlab("Transmission Rate") + 
+  ylab("Density") 
+  
+  ## Once again, plotting sqrt() so that we can see it better
+ggplot(res_det %>% filter(round(postrait, 7) == round(init_beta_inf, 7))
+  , aes(x = time, y = negtrait_index, z = abundance)) +
+   scale_fill_gradient(low = "white", high = "red4") +
+   geom_raster(aes(fill = sqrt(abundance))) +
+  xlab("Time") + 
+  ylab("Recovery Rate (index)")
+
+## FIXME: I have some vision of doing this so wanted to get a start on it, but it isn't correct yet
+
+## Recover the tradeoff curve from the output
+res_det.tc <- res_det %>% group_by(negtrait) %>% summarize(beta = mean(beta))
+## And summarize quantiles through time
+res_det.q  <- res_det %>% group_by(time) %>% 
+  summarize(
+    negtrait = weighted.mean(negtrait, abundance)
+  , beta     = weighted.mean(beta, abundance)
+    )
+
+## Plot movement of the distribution on the tradeoff curve
+ggplot(res_det.tc %>% filter(negtrait < 0.1)
+  , aes(negtrait, beta)) + 
+  geom_line() +
+  geom_path(data = res_det.q, colour = "red4", lwd = 1) +
+  xlab("Recovery Rate") +
+  ylab("Transmission Rate") 
+  

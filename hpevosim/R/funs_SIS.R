@@ -376,6 +376,11 @@ hpevosim_determ       <- function (t, y, parms) {
 
 calc_startvals_determ <- function (neg_trait, pos_trait, N, power_c, power_exp, mut_link_p, eff_scale, no_tradeoff, parasite_tuning, tradeoff_only) {
 
+## Note: Orientation of these matrices can be confusing at times given the variety of models that are being captured here
+  ## 1) negtrait needs to always be oriented increasing over rows top to bottom
+  ## 2) postrait is either oriented increasing over columns left to right if it is evolving, or oriented in the same way as 
+    ## negtrait in the case of tradeoff_only, where only one trait is evolving (negtrait) and postrait gets pulled along following the tradeoff curve
+  
 ## No resistance in SIS, but leaving structure for now...
 negtrait_r     <- mut_link_p$linkinv(neg_trait) #- mut_link_h$linkfun(res0))
 
@@ -395,12 +400,13 @@ if (parasite_tuning) {
     effic <- rep(1, length(neg_trait))
   }
   
-joint_beta <- outer(effic, power_tradeoff(alpha = negtrait_r, c = power_c, curv = power_exp))
+joint_beta <- t(outer(effic, power_tradeoff(alpha = negtrait_r, c = power_c, curv = power_exp)))
 
 ## Create a negtrait matrix from the negtrait vector
 negtrait_mat <- matrix(
   data = rep(negtrait_rt, each = length(pos_trait))
-, nrow = length(pos_trait), ncol = length(neg_trait))
+, nrow = length(pos_trait), ncol = length(neg_trait)
+, byrow = T)
   
 } 
   
@@ -964,8 +970,13 @@ run_sim <- function(
         mutneg <- 1        
         }
       } else {
+        if (tradeoff_only) {
+        mutpos <- 0 
+        mutneg <- 1          
+        } else {
         mutpos <- 1 
-        mutneg <- 1      
+        mutneg <- 1          
+        }
       }
       
       ## Adjust mutation rate for biased (directional) mutation
@@ -1005,7 +1016,10 @@ hpevosim_determ.out.t <- tidy.deSolve(
    , power_exp       = power_exp
   )
 
-    return(hpevosim_determ.out.t)
+    return(list(
+      hpevosim_determ.out = hpevosim_determ.out.t
+    , params_determ       = params_determ)
+      )
 
     }
 }
