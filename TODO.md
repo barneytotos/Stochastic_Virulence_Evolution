@@ -3,9 +3,9 @@
 * Deterministic cleaned up a bit (see commit Feb 20), but still have some lingering code to clean
 	* tuning won't work currently
 	* some lingering "tuning" places where it shouldn't be
-	* Still need to check ability for the deterministic model to run tradeoff and efficiency 
+	* Still need to check ability for the deterministic model to run efficiency mdeol
 	* make sure metadata (beta, gamma values, beta/gamma scaling, etc.; maybe even parameter values?) get attached to sim output (attributes, or make an S3 object)
-		* Some progress here but still need to update bookkeeping for the deterministic model (this stuff is returned for stochastic == T)
+		* Could consider returning as one object then tidying outside of run_sim(). Currently I have the tidying done in run_sim() and parameters returned as a separate list entry
 * Brainstorm what plots we need and what code updates are needed to get us there
 	* Create slurm job array bash script for sending these jobs to Stanford cluster
 * Some residual bad names that keep popping up. Cleaning these as I go
