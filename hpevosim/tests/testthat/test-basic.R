@@ -29,6 +29,7 @@ plot(res)  ## goes to look for plot.evosim function
 run_sim_params_nt <- transform(run_sim_params,
                                     no_tradeoff = TRUE,
                                     mut_mean = -0.05)
+
 res_nt <- do.call(run_sim,run_sim_params_nt)
 
 plot(res_nt)
@@ -79,9 +80,9 @@ expect_equal(
   filter(time == 40, round(negtrait, 7) == round(init_gamma_inf, 7)) %>% 
   summarize(
     total_I   = sum(abundance)
-  , mean_beta = sum(abundance * beta)
+  , mean_beta = weighted.mean(beta, abundance)
   ) %>% unlist())
-, c(total_I = 0.7727769, mean_beta = 0.2351861)
+, c(total_I = 0.7727768933, mean_beta = 0.3043389318)
   )
 
 whichtime <- 80
@@ -127,20 +128,11 @@ with(res_det %>% filter(round(negtrait, 7) == round(init_gamma_inf, 7)) %>% drop
 
 ## running again, this time with a tradeoff curve.
 ## evolve only in gamma, beta gets pulled along according to the tradeoff curve
-run_sim_params_determ <- transform(run_sim_params_nt,
-                                    deterministic = TRUE,
-  ## Need to be quite careful with parameter values. Large difference in what values make sense between stochastic and deterministic
-                                    power_c = 2,
-                                    mut_mean = -0.02,
-                                    mu = 0.1,
-                                    gamma0 = 0.02,
-                                    pos_trait0 = 0.3,
-                                    neg_trait0 = 0.05,
+run_sim_params_determ <- transform(run_sim_params_determ,
+                                    power_c =    2,
                                     no_tradeoff = F, 
                                     tradeoff_only = T
   )
-
-debug(run_sim)
 
 res_det  <- do.call(run_sim,run_sim_params_determ)
 res_det  <- res_det[["hpevosim_determ.out"]]
@@ -157,9 +149,9 @@ expect_equal(
   filter(time == 40, round(postrait, 7) == round(init_beta_inf, 7)) %>% 
   summarize(
     total_I   = sum(abundance)
-  , mean_beta = sum(abundance * beta)
+  , mean_beta = weighted.mean(beta, abundance)
   ) %>% unlist())
-, c(total_I = 0.9070394, mean_beta = 0.6510977)
+, c(total_I = 0.9070393943, mean_beta = 0.7178273596)
   )
 
 whichtime <- 80
@@ -200,4 +192,68 @@ ggplot(res_det.tc %>% filter(negtrait < 0.1)
   geom_path(data = res_det.q, colour = "red4", lwd = 1) +
   xlab("Recovery Rate") +
   ylab("Transmission Rate") 
+
+
+## Finally run for efficiency model
+run_sim_params_determ <- transform(run_sim_params_determ,
+                                    no_tradeoff   = F, 
+                                    tradeoff_only = F,
+                                    determ_length = 400,
+                                    gamma0        = 0.2, ## increasing "background recovery" so that the negtrait optimum isn't so close to 0
+                                    mut_mean      = 0.00
+   )
+
+## NOTE: Some things to explore for efficiency model
+ ## a few negative mut_mean tried so far seems to pull gamma away from tradeoff optimum as efficiency increases which
+  ## is leading to higher beta. Probably if this was run long enough it would escape this (I believe in the thesis this
+   ## was a partial cause of the roundabout path to the optimum), but we figured netural gamma is probably best for this
+    ## scenario so putting this down for now
+res_det  <- do.call(run_sim,run_sim_params_determ)
+## Throwing away the parameters, but don't need them for now
+## FIXME?: Better integration of parameters 
+res_det  <- res_det[["hpevosim_determ.out"]]
+## FIXME: progress bar? [Put inside ODE? Doesn't seem to be an option in ode()]
+
+## This round() is annoying
+expect_equal(
+ (res_det %>% 
+  filter(time == 40) %>% 
+  summarize(
+    total_I   = sum(abundance)
+  , mean_beta = weighted.mean(beta, abundance)
+  ) %>% unlist())
+, c(total_I = 0.05965713701, mean_beta = 0.24803734939)
+  )
+
+whichtime <- 80
+whichtimes <- c(40, 200, 400)
+
+## sorta ugly
+opt_negtrait <- which.max(power_R0(alpha = unique(res_det$negtrait), c = run_sim_params_determ$power_c, curv = run_sim_params_determ$power_exp, gamma = run_sim_params_determ$gamma0, N = 1))
+
+## FIXME: Convert x and y to actual trait values.
+ ## Would also like to plot on same plot.
+ggplot(res_det %>% filter(time == whichtimes[1] | time == whichtimes[2] | time == whichtimes[3])
+  , aes(x = postrait_index, y = negtrait_index, z = abundance)) + 
+   scale_fill_gradient(low = "white", high = "red4") +
+   geom_raster(aes(fill = abundance)) +
+  facet_wrap(~time) +
+  geom_hline(aes(yintercept = opt_negtrait), linetype = "dashed", lwd = 0.4) +
+  xlab("Efficiency (index)") + 
+  ylab("Recovery Rate (index)")
+
+res_det.mb <- res_det %>% group_by(time) %>%
+  summarize(
+    mean_gamma = weighted.mean(x = negtrait, w = abundance)
+  , mean_beta  = weighted.mean(x = beta, w = abundance)
+  , mean_eff   = weighted.mean(x = postrait, w = abundance))
+
+grid.arrange(
+  ggplot(res_det.mb, aes(time, mean_gamma)) + geom_line()
+, ggplot(res_det.mb, aes(time, mean_beta)) + geom_line()
+, ggplot(res_det.mb, aes(time, mean_eff)) + geom_line()
+, ncol = 1
+)
+
+## FIXME: Need a cleaner way to plot distribution of beta through time
   

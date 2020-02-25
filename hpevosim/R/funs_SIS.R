@@ -271,7 +271,7 @@ scale_beta_alpha <- function (state, power_c, power_exp, mut_link_p, parasite_tu
 }
 
 ## Calculate starting trait values for parasite and host | desired starting R0
-calc_startvals        <- function (neg_trait0, tuning, N, power_c, power_exp, mut_link_p, eff_scale, parasite_tuning, tradeoff_only, no_tradeoff, pos_trait0) {
+calc_startvals        <- function (neg_trait0, pos_trait0, N, power_c, power_exp, mut_link_p, eff_scale, parasite_tuning, tradeoff_only, no_tradeoff) {
 
 ## No resistance in SIS, but leaving structure for now...
 negtrait_r     <- mut_link_p$linkinv(mut_link_p$linkfun(neg_trait0)) #- mut_link_h$linkfun(res0))
@@ -282,10 +282,10 @@ negtrait_rt    <- mut_link_p$linkinv(mut_link_p$linkfun(negtrait_r)) # - mut_lin
 ## Symmetrical matrix of efficiencies associated with combination of each parasite trait
 if (!no_tradeoff) {
 if (parasite_tuning) {
-effic       <- outer(mut_link_p$linkfun(neg_trait0), mut_link_p$linkfun(tuning), FUN = eff_calc, eff_scale = eff_scale)
+effic       <- outer(mut_link_p$linkfun(neg_trait0), mut_link_p$linkfun(pos_trait0), FUN = eff_calc, eff_scale = eff_scale)
 } else {
   if (!tradeoff_only) {
-    effic <- matrix(data = tuning, nrow = 1, ncol = 1)
+    effic <- matrix(data = pos_trait0, nrow = 1, ncol = 1)
   } else {
     ## Should refer to number of starting strains
     effic <- matrix(data = 1, nrow = 1, ncol = 1)
@@ -303,8 +303,8 @@ joint_beta     <- pos_trait0
 }
 
 return(list(
-  intrinsic_beta = effic
-, tuning         = tuning
+  intrinsic_beta = effic 
+, pos_trait0     = pos_trait0   ## can I just remove this?
 , joint_postrait = joint_beta
 , joint_negtrait = negtrait_rt
   ))
@@ -609,10 +609,10 @@ run_sim <- function(
         ## Based on my new setup it seems better to directly calculate efficiency and starting beta as a function of defined tuning
         ## and aggressiveness starting values instead of going backwards from R0
 
-        startvals  <- calc_startvals(neg_trait0, tune0, N,
+        startvals  <- calc_startvals(neg_trait0, pos_trait0, N,
                                      power_c, power_exp,
                                      mut_link_p, eff_scale, parasite_tuning,
-                                     tradeoff_only, no_tradeoff, pos_trait0)
+                                     tradeoff_only, no_tradeoff)
     #    pos_trait0 <- startvals$joint_postrait
         
      if (is.null(Imat)) {
@@ -679,13 +679,12 @@ run_sim <- function(
     } else {
     if (parasite_tuning || (!parasite_tuning && !tradeoff_only)) {
         if (!deterministic) {
-            lpostrait  <- mut_link_p$linkfun(startvals$tuning)     
+          lpostrait  <- mut_link_p$linkfun(startvals$postrait0) 
         } else {
-            ## FIXME: This is likely to have broken determ = F
-            lpostrait  <- startvals$tuning 
+          lpostrait  <- startvals$postrait0
         }
     } else {
-            lpostrait  <- mut_link_p$linkfun(startvals$joint_postrait)
+          lpostrait  <- mut_link_p$linkfun(startvals$joint_postrait)
     }
     }
 
