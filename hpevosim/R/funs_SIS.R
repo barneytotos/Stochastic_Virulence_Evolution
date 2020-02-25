@@ -526,7 +526,10 @@ return(x.l)
 run_sim <- function(
    no_tradeoff          = TRUE
  , nt_mut_var_pos_trait = TRUE    ## For nearly neutral model are we tracking evolution in transmission (pos_trait) (TRUE) or recovery (neg_trait) (FALSE)
- , pos_trait0           = 0.005 
+  ## Converted to be the stand-in for the focal model for *all* models (whether that be beta directly, efficiency, or the tuning parameter). 
+   ## This could likely increase confusion as an appropriate starting parameter may no vary by model, but it does clean up the code to remove too many different parameter names
+    ## that may or may not be used depending on the model
+ , pos_trait0           = 0.03
     ## These first parameters are all about what type of simulation to run
      ## Note: hosts are always set to evolve. Crudely can force them never to evolve by just setting the probability to effectively 0
  , deterministic        = FALSE   ## Run an advection diffusion version?

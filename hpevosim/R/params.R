@@ -3,7 +3,7 @@
 stoch_params0 <- list(
                no_tradeoff          = FALSE
              , nt_mut_var_pos_trait = TRUE
-             , pos_trait0           = 0.005
+             , pos_trait0           = 0.03
              , nt                   = 1e4
              , rptfreq              = 200
              , deterministic        = FALSE
@@ -17,7 +17,6 @@ stoch_params0 <- list(
              , mut_mean             = 0
              , mut_sd               = 0.15
              , neg_trait0           = 0.01
-             , tune0                = 0.03
              , tol0                 = 1
              , res0                 = 1
              , gamma0               = 0.2
