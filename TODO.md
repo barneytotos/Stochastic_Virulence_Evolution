@@ -1,9 +1,7 @@
 ## Morgan
 
 * Deterministic cleaned up a bit (see commit Feb 20), but still have some lingering code to clean
-	* tuning won't work currently
-	* some lingering "tuning" places where it shouldn't be
-	* Still need to check ability for the deterministic model to run efficiency mdeol
+	* Tuning model fixed to the point that it is now "working" except that it is a bit odd in that parasites are evolving directly in efficiency and gamma which jointly determine beta as in the efficiency model. In the tuning model efficiency is defined by two traits (call them phi and psi), which are pre-processed to produce efficiency, which causes the tuning model to more or less just be a slightly modified version of efficiency instead of having a parasite evolving in three traits
 	* make sure metadata (beta, gamma values, beta/gamma scaling, etc.; maybe even parameter values?) get attached to sim output (attributes, or make an S3 object)
 		* Could consider returning as one object then tidying outside of run_sim(). Currently I have the tidying done in run_sim() and parameters returned as a separate list entry
 * Brainstorm what plots we need and what code updates are needed to get us there
