@@ -392,7 +392,17 @@ if (parasite_tuning) {
 ## Symmetrical matrix of efficiencies associated with combination of each parasite trait
      effic       <- outer(neg_trait, pos_trait, FUN = eff_calc, eff_scale = eff_scale)
 ## From these calculate beta of each of the strains
-     joint_beta  <- sweep(effic, 2, power_tradeoff(alpha = negtrait_r, c = power_c, curv = power_exp), FUN = "*")
+    ## EDIT FEB 28, 2020: To correspond to the other models:
+     ## transpose so that when going down rows, beta changes because of changing gamma following the tradeoff curve
+       ## thus, movement in the x direction is just moving in efficiency space at a given level of 
+     joint_beta  <- t(sweep(effic, 2, power_tradeoff(alpha = negtrait_r, c = power_c, curv = power_exp), FUN = "*"))
+     
+## Create a negtrait matrix from the negtrait vector
+negtrait_mat <- matrix(
+  data = rep(negtrait_rt, each = length(pos_trait))
+, nrow = length(pos_trait), ncol = length(neg_trait)
+, byrow = T) 
+     
 } else {
   if (!tradeoff_only) {
     effic <- mut_link_p$linkinv(pos_trait)
@@ -642,7 +652,7 @@ run_sim <- function(
       pos_trait     <- c(seq(
         mut_link_p$linkfun(0.01), mut_link_p$linkfun(0.99)
         , length = 100))
-    
+  
       startvals  <- calc_startvals_determ(
          neg_trait, pos_trait, N, power_c
        , power_exp, mut_link_p, eff_scale, no_tradeoff
