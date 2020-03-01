@@ -467,7 +467,7 @@ power_R0_grad  <- function (alpha, c, curv, gamma, N, eps) {
 ######
 
 tidy.deSolve <- function(x, startvals, params, mut_link_p, 
-  no_tradeoff, parasite_tuning, tradeoff_only, power_c, power_exp, ...) {
+  no_tradeoff, parasite_tuning, tradeoff_only, power_c, power_exp, eff_scale, ...) {
   t <- x[, 1]
   x <- x[, -c(1, 2)]
   
@@ -1026,6 +1026,7 @@ hpevosim_determ.out.t <- tidy.deSolve(
    , tradeoff_only   = tradeoff_only
    , power_c         = power_c
    , power_exp       = power_exp
+   , eff_scale       = eff_scale
   )
 
     return(list(

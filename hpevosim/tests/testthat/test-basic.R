@@ -194,7 +194,7 @@ ggplot(res_det.tc %>% filter(negtrait < 0.1)
   ylab("Transmission Rate") 
 
 
-## Finally run for efficiency model
+## Run for efficiency model
 run_sim_params_determ <- transform(run_sim_params_determ,
                                     no_tradeoff   = F, 
                                     tradeoff_only = F,
@@ -257,3 +257,53 @@ grid.arrange(
 
 ## FIXME: Need a cleaner way to plot distribution of beta through time
   
+
+## Finally, run for tuning model
+run_sim_params_determ <- transform(run_sim_params_determ,
+                                    parasite_tuning = T
+   )
+
+res_det  <- do.call(run_sim,run_sim_params_determ)
+res_det  <- res_det[["hpevosim_determ.out"]]
+
+expect_equal(
+ (res_det %>% 
+  filter(time == 40) %>% 
+  summarize(
+    total_I   = sum(abundance)
+  , mean_beta = weighted.mean(beta, abundance)
+  ) %>% unlist())
+, c(total_I = 0.6160694006, mean_beta = 0.7408605573)
+  )
+
+whichtimes <- c(40, 200, 400)
+
+## sorta ugly
+opt_negtrait <- which.max(power_R0(alpha = unique(res_det$negtrait)
+  , c = run_sim_params_determ$power_c
+  , curv = run_sim_params_determ$power_exp, gamma = run_sim_params_determ$gamma0, N = 1))
+
+ggplot(res_det %>% filter(time == whichtimes[1] | time == whichtimes[2] | time == whichtimes[3])
+  , aes(x = postrait_index, y = negtrait_index, z = abundance)) + 
+   scale_fill_gradient(low = "white", high = "red4") +
+   geom_raster(aes(fill = abundance)) +
+  facet_wrap(~time) +
+  geom_hline(aes(yintercept = opt_negtrait), linetype = "dashed", lwd = 0.4) +
+  xlab("Efficiency (index)") + 
+  ylab("Recovery Rate (index)")
+
+res_det.mb <- res_det %>% group_by(time) %>%
+  summarize(
+    mean_gamma  = weighted.mean(x = negtrait, w = abundance)
+  , mean_beta   = weighted.mean(x = beta, w = abundance)
+  , mean_tuning = weighted.mean(x = postrait, w = abundance)
+  , mean_eff    = weighted.mean(x = effic, w = abundance))
+
+grid.arrange(
+  ggplot(res_det.mb, aes(time, mean_gamma)) + geom_line()
+, ggplot(res_det.mb, aes(time, mean_beta)) + geom_line()
+, ggplot(res_det.mb, aes(time, mean_tuning)) + geom_line()
+, ggplot(res_det.mb, aes(time, mean_eff)) + geom_line()  
+, ncol = 2
+)
+
