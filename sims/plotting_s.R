@@ -16,12 +16,12 @@
 endsteps <- 50
 
 ### load previous results
-res_all  <- readRDS("batch_runs/eff_FALSE_100_Fri_Mar_06_2020.Rds")
+res_all  <- readRDS("batch_runs/nt_FALSE_100_Sat_Mar_07_2020.Rds")
 
 plot_runs <- c(4, 7, 8)
 
 ### Can first explore just single runs to check to see if the model is working. What to check will vary by the model chosen
-gg_check <- ggplot((res_all %>% filter(param_num <= 18, time < 20000))
+gg_check <- ggplot((res_all %>% filter(param_num <= 12, time < 20000))
   , aes(time, mean_postrait)) + geom_path() + 
   geom_path(aes(time, mean_negtrait), col = "blue", lwd = 1) +
   facet_wrap(~param_num)

@@ -155,7 +155,7 @@ res <- res[-which(is.na(res$time)), ]
   went.extinct <- FALSE
 }
 
-  if (i == 1) {
+  if (!exists("res_all")) {
 res_all <- res
   } else {
 res_all <- rbind(res_all, res)
