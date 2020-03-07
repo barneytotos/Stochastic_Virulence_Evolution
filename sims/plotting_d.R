@@ -3,17 +3,22 @@
 #################################################
 
 ### load previous results
-res_all  <- readRDS("batch_runs/nt_TRUE_10_Fri_Mar_06_2020.Rds")
+res_all  <- readRDS("batch_runs/to_TRUE_100_Fri_Mar_06_2020.Rds")
 
 endsteps <- 50
 
 ### Can first explore just single runs to check to see if the model is working. What to check will vary by the model chosen
-gg_check <- ggplot((res_all %>% filter(param_num == 1)), aes(time, mean_postrait)) + geom_path()
+gg_check <- ggplot((res_all %>% filter(param_num <= 12, time < 300))
+  , aes(time, mean_postrait)) + geom_path() +  
+  geom_path(aes(time, mean_negtrait), col = "blue", lwd = 1) +
+  facet_wrap(~param_num)
 gg_check
-gg_check <- ggplot((res_all %>% filter(param_num == 1)), aes(time, mean_negtrait)) + geom_path() + 
-  geom_hline(aes(yintercept = opt_negtrait))
+gg_check <- ggplot((res_all %>% filter(param_num <= 10))
+  , aes(time, mean_negtrait)) + geom_path() + 
+  geom_hline(aes(yintercept = opt_negtrait)) + facet_wrap(~param_num)
 gg_check
-gg_check <- ggplot((res_all %>% filter(param_num == 1)), aes(time, total_I)) + geom_path() 
+gg_check <- ggplot((res_all %>% filter(param_num <= 10))
+  , aes(time, total_I)) + geom_path()  + facet_wrap(~param_num)
 gg_check
 
 ## Record the time point number
@@ -100,4 +105,4 @@ ggplot(res_all_s.gg, aes(Param.Value, Out.Value)) +
     geom_point(aes(colour = mu)) +
     facet_grid(Out.Name ~ Param.Name, scale = "free") +
     scale_color_viridis() +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 14))

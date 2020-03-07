@@ -29,7 +29,7 @@ deterministic <- FALSE
 num_runs     <- 1
 
 ## placing in to top for ease of debugging...
-num_points   <- 1
+num_points   <- 100
 
 ## load params. ifelse for deterministic inside 
 source("sims/params.R")

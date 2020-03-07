@@ -734,26 +734,39 @@ run_sim <- function(
     ## FIXME: add, somehow, to documentation (is there a way to not repeat ourselves?)
      ## Added tracking host responses
     res <- as.data.frame(matrix(
-      NA, nrow = nrpt, ncol = 18
+      NA, nrow = nrpt, ncol = 25
     , dimnames = list(
       NULL
-    , c("time"
+    , c(
+        "time"
       , "num_S"
       , "num_S_strains"
       , "num_I"
       , "num_I_strains"
       , "pop_size"
-#     , paste0(c("mean_hl", "sd_hl"), "res")
-#     , paste0(c("mean_hl", "sd_hl"), "tol")
-#     , paste0(c("mean_pl", "sd_pl"), mut_var)
+      
+ ## evolving traits on link scale
       , paste0(c("mean_pl", "sd_pl"), "negtrait")
-      , "mean_negtrait"
-      , "sd_negtrait"
       , "median_negtrait"
       , "lower_negtrait"
       , "upper_negtrait"
+      
+      , paste0(c("mean_pl", "sd_pl"), "postrait")
+      , "median_postrait"
+      , "lower_postrait"
+      , "upper_postrait"
+      
+ ## evolving traits on probability scale
+      , "mean_negtrait"
+      , "sd_negtrait"
+
       , "mean_postrait"
       , "sd_postrait"
+
+ ## derived transmission on probability scale for the given model     
+      , "mean_beta"
+      , "sd_beta"
+      
       , "total_mutations"
       , "total_extinctions"
       , "shannon"
@@ -885,31 +898,36 @@ run_sim <- function(
     }
       
         ## summary statistics
-        I_tot        <- ncol(state$Imat)
-        num_I        <- sum(state$Imat)
-        ltrait_mean  <- sum(colSums(state$Imat)*state$lpostrait)/num_I
-        ## Not quite sure about this formula. Taken from BMB code
-        ltrait_sd    <- sqrt(sum(colSums(state$Imat)*(state$lpostrait-ltrait_mean)^2)/num_I)
-        lalpha_mean  <- sum(colSums(state$Imat)*state$lnegtrait)/num_I
-        lalpha_sd    <- sqrt(sum(colSums(state$Imat)*(state$lnegtrait-lalpha_mean)^2)/num_I)
-        lalpha_q     <- quantile(rep(state$lnegtrait, colSums(state$Imat)), c(0.025, 0.50, 0.975))
-        lalpha_est   <- lalpha_q[2]
-        lalpha_lwr   <- lalpha_q[1]
-        lalpha_upr   <- lalpha_q[3]
-        num_S        <- sum(state$Svec)
-        S_tot        <- length(state$Svec)
-#       lhres_mean   <- sum(state$Svec*state$hrtraitvec)/num_S
-#       lhres_sd     <- sqrt(sum(state$Svec*(state$hrtraitvec-lhres_mean)^2)/num_S)
-#       lhtol_mean   <- sum(state$Svec*state$httraitvec)/num_S
-#       lhtol_sd     <- sqrt(sum(state$Svec*(state$httraitvec-lhtol_mean)^2)/num_S)
-        pop_size     <- num_I + num_S
-        shann        <- vegan::diversity(state$Imat, index = "shannon", MARGIN = 1, base = exp(1))
-
-        ## actual alpha and beta of all parasites in all host classes
-        avg_alpha    <- mean(state$neg_trait)
-        sd_alpha     <- sd(state$neg_trait)
-        avg_beta     <- mean(state$pos_trait)
-        sd_beta      <- sd(state$pos_trait)
+        num_S      <- sum(state$Svec)
+        S_tot      <- length(state$Svec)
+        I_tot      <- ncol(state$Imat)
+        num_I      <- sum(state$Imat)
+        pop_size   <- num_I + num_S
+   
+        lneg_mean  <- sum(colSums(state$Imat)*state$lnegtrait)/num_I
+        lneg_sd    <- sqrt(sum(colSums(state$Imat)*(state$lnegtrait-lneg_mean)^2)/num_I)
+        lneg_q     <- quantile(rep(state$lnegtrait, colSums(state$Imat)), c(0.025, 0.50, 0.975))
+        lneg_est   <- lneg_q[2]
+        lneg_lwr   <- lneg_q[1]
+        lneg_upr   <- lneg_q[3]     
+        
+        lpos_mean  <- sum(colSums(state$Imat)*state$lpostrait)/num_I
+        lpos_sd    <- sqrt(sum(colSums(state$Imat)*(state$lpostrait-lpos_mean)^2)/num_I)
+        lpos_q     <- quantile(rep(state$lpostrait, colSums(state$Imat)), c(0.025, 0.50, 0.975))
+        lpos_est   <- lpos_q[2]
+        lpos_lwr   <- lpos_q[1]
+        lpos_upr   <- lpos_q[3]     
+        
+        avg_neg    <- mean(state$neg_trait)
+        sd_neg     <- sd(state$neg_trait)     
+      
+        avg_pos    <- mut_link_p$linkinv(lpos_mean)
+        sd_pos     <- mut_link_p$linkinv(lpos_sd)    
+        
+        avg_beta   <- mean(state$pos_trait)
+        sd_beta    <- sd(state$pos_trait)
+        
+        shann      <- vegan::diversity(state$Imat, index = "shannon", MARGIN = 1, base = exp(1))
 
         if (progress == "bar") {
           cat(".")
@@ -921,31 +939,40 @@ run_sim <- function(
           
         }
         res[i,] <- c(
-          i*rptfreq
-        , num_S
-        , S_tot
-        , num_I
-        , I_tot
-        , pop_size
-#       , lhres_mean
-#       , lhres_sd
-#       , lhtol_mean
-#       , lhtol_sd
-#       , ltrait_mean
-#       , ltrait_sd
-        , lalpha_mean
-        , lalpha_sd
-        , avg_alpha
-        , sd_alpha
-        , lalpha_est
-        , lalpha_lwr
-        , lalpha_upr
-        , avg_beta
-        , sd_beta
-#       , ifelse(mut_var == "beta", state$gamma[1,1], state$gamma[1,1])
-        , mut_counter
-        , num_extinct
-        , shann
+          i*rptfreq        ##   "time"
+        , num_S            ##   "num_S"
+        , S_tot            ##   "num_S_strains"
+        , num_I            ##   "num_I"
+        , I_tot            ##   "num_I_strains"
+        , pop_size         ##   "pop_size"
+          
+ ## evolving traits on link scale
+        , lneg_mean        ##   "mean_pl_negtrait"        
+        , lneg_sd          ##   "sd_pl_negtrait"   
+        , lneg_est         ##   "median_negtrait"
+        , lneg_lwr         ##   "lower_negtrait"
+        , lneg_upr         ##   "upper_negtrait"
+ 
+        , lpos_mean        ##   "mean_pl_postrait"       
+        , lpos_sd          ##   "sd_pl_postrait"         
+        , lpos_est         ##   "median_postrait"        
+        , lpos_lwr         ##   "lower_postrait"         
+        , lpos_upr         ##   "upper_postrait"         
+          
+ ## evolving traits on probability scale          
+        , avg_neg          ##   "mean_negtrait"
+        , sd_neg           ##   "sd_negtrait"
+
+        , avg_pos          ##   "mean_postrait" 
+        , sd_pos           ##   "sd_postrait"
+
+ ## derived transmission on probability scale for the given model           
+        , avg_beta          ##   "mean_beta"
+        , sd_beta           ##   "sd_beta"
+          
+        , mut_counter       ##   "time"
+        , num_extinct       ##   "time"
+        , shann             ##   "time"
           )
 
         ## DRY ...

@@ -146,6 +146,10 @@ res <- left_join(res, params, by = "param_num")
 if (nrow(res[complete.cases(res), ]) < params[i, ]$nrpt) {
   res          <- res %>% mutate(went_extinct = 1)
   went.extinct <- TRUE 
+
+## Remove rows after extinction
+res <- res[-which(is.na(res$time)), ]
+  
 } else {
   res <- res %>% mutate(went_extinct = 0)
   went.extinct <- FALSE

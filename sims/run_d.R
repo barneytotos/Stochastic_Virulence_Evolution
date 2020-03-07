@@ -48,7 +48,7 @@ for (i in 1:nrow(params)) {
   alpha = seq(0.01, 0.99, by = 0.01)
 , c     = power_c
 , curv  = power_exp) / 
-    (1 - (1 - seq(0.01, 0.99, by = 0.01)) * (1 - gamma0))
+    (seq(0.01, 0.99, by = 0.01) + gamma0)
 )]
 )
  
@@ -113,9 +113,9 @@ for (i in 1:nrow(params)) {
  , R0_init             = R0_init[i]
  , deterministic       = deterministic[i]
 ## Some defaults here for deterministic run. ALl parameters from here down are ignored if deterministic = FALSE
- , determ_length       = determ_length[i]
+ , determ_length       = determ_length[i] * 2
  , determ_timestep     = determ_timestep[i]
- , lsoda_hini          = lsoda_hini[i]
+ , lsoda_hini          = lsoda_hini[i] / 5
           ))
       , silent = TRUE
       )))
@@ -127,7 +127,8 @@ res          <- res[[1]]
 
 ## Extremely memory intensive to save the whole run so summarize here for now. Can come back and save the
  ## whole distribution for a different analysis if it is needed
-res <- res %>% 
+res1 <- try(
+  res %>% 
   group_by(time) %>% 
   summarize(
     total_I        = sum(abundance)
@@ -139,6 +140,22 @@ res <- res %>%
   ) %>% mutate(
     param_num    = params[i, ]$param_num
   , elapsed_time = time_check[3])
+)
+## Not a long term fix, but just want to get some running for now
+  if (class(res1)[1] != "try-error") {
+res <- res1
+  } else {
+res <- res %>% 
+  group_by(time) %>% 
+  summarize(
+    total_I        = sum(abundance)
+  , mean_postrait  = weighted.mean(postrait, abundance)
+  , mean_negtrait  = weighted.mean(negtrait, abundance)
+  , sd_postrait    = sum(abundance * (postrait - weighted.mean(postrait, abundance))^2) 
+  , sd_negtrait    = sum(abundance * (negtrait - weighted.mean(negtrait, abundance))^2)) %>% mutate(
+    param_num    = params[i, ]$param_num
+  , elapsed_time = time_check[3])
+  }
 
 res <- left_join(res, params, by = "param_num")
 
