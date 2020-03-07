@@ -1,4 +1,5 @@
 ### Batch runs for paper
+setwd("/scratch/users/kainm/stochastic_virulence_evolution")
 
 ## FALSE runs SIS, TRUE is not supported right now
 host_mort <- FALSE
@@ -27,16 +28,8 @@ deterministic <- TRUE
  ## for stochasticity at one combo set: num_points to some small value and num_runs to a larger value
 num_runs     <- 1
 
-## Number of parameter combinations: 1000 for other models 2000 here because of TRUE, FALSE above
-num_points <-  
- if (model.choice == "nt") {
-    2000
- } else {
-    1000
- }
-
 ## placing in to top for ease of debugging...
-num_points <- 10
+num_points <- 100
 
 ## load params. ifelse for deterministic inside 
 source("sims/params.R")

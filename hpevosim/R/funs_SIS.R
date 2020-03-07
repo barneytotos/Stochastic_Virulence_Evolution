@@ -46,8 +46,6 @@ get_mut_p        <- function (orig_trait, no_tradeoff, nt_mut_var_pos_trait
        new_trait_pos <- orig_trait$pos_trait
     }
     
-    
-    
   } else {
   
    if (mut_type == "shift") {
@@ -550,7 +548,6 @@ run_sim <- function(
     ## These next parameters all control how the simulation is run
  , R0_init              = 2       ## >1, not actually used for tuning model
  , neg_trait0           = 0.03    ## Either host recovery rate to the parasite (SIS model) or parasite-induced host mortality (SIR model). Default to main thesis result start
- , tune0                = 0.97    ## Starting tuning. Give a value, but only used if parasite_tuning == TRUE. Default to main thesis result start
  , gamma0               = 0.2     ## Background host recovery (immune pressure ovr however you want to think of it)
                                   ## (Can set to zero if using non-tradeoff model)
  , N                    = 200     ## Host population size, integer > 0
@@ -600,7 +597,8 @@ run_sim <- function(
     , N       > 0
     , mu      > 0
     , mut_sd  > 0
-    , (nt/rptfreq) %% 1 == 0)
+  #  , (nt/rptfreq) %% 1 == 0
+      )
 
     dfun <- function(lab="") {
         if (debug) {
@@ -692,9 +690,9 @@ run_sim <- function(
     } else {
     if (parasite_tuning || (!parasite_tuning && !tradeoff_only)) {
         if (!deterministic) {
-          lpostrait  <- mut_link_p$linkfun(startvals$postrait0) 
+          lpostrait  <- mut_link_p$linkfun(startvals$pos_trait0) 
         } else {
-          lpostrait  <- startvals$postrait0
+          lpostrait  <- startvals$pos_trait0
         }
     } else {
           lpostrait  <- mut_link_p$linkfun(startvals$joint_postrait)
@@ -727,6 +725,9 @@ run_sim <- function(
     , Svec       = Svec)
     
     dfun("init")
+    
+    ## Run the stochastic version
+    if (!deterministic) {
 
     nrpt <- nt %/% rptfreq
 
@@ -760,9 +761,6 @@ run_sim <- function(
     
     mut_counter <- 0
     num_extinct <- 0
-
-    ## Run the stochastic version
-    if (!deterministic) {
 
     for (i in 1:nrpt) {
             for (j in 1:rptfreq) {

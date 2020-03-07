@@ -54,11 +54,12 @@ params.all  <- data.frame(
    if (model.choice == "nt") {
       qunif(lhs[, 2], min = 0.01, max = 0.50)
  } else if (model.choice == "to") {
-      ## ignored in to, transmission is just a function of gamma (neg_trait)
+      ## ignored in 'to', transmission is just a function of gamma (neg_trait)
       qunif(lhs[, 2], min = 0.01, max = 0.50)                            
  } else if (model.choice == "eff") {
-      ## relative beta in eff
-      qunif(lhs[, 2], min = 0.01, max = 0.50)
+      ## relative beta in 'eff'. Give full range, but I think there will be relatively few parameter combos that don't lead to extinction
+       ## see parameter below
+      qunif(lhs[, 2], min = 0.01, max = 0.99)
  }
  , neg_trait0            =
    if (model.choice == "nt") {
@@ -155,7 +156,8 @@ params.all  <- data.frame(
  , gamma0                = qunif(lhs[, 8], min = 0.01, max = 0.4) 
  
 ## used only for the tradeoff models but include them. Still a bit unclear of the best parameter values here
- , power_c             = qunif(lhs[, 9], min = 0.0005, max = 0.001)
+ ## need a much higher power_c for deterministic formulation however
+ , power_c             = qunif(lhs[, 9], min = 0.0005, max = 0.001) * 1000
  , power_exp           = qunif(lhs[, 10], min = 1.5, max = 5.5) 
    
 ## Extra required parameters that are the same for all models

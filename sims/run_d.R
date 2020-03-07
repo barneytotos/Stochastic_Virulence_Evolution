@@ -5,8 +5,6 @@
 num_complete <- 0
 ## collections of parameters
 j            <- 1
-## list to collect results
-res_all <- vector("list", length = num_points)
 
 while (num_complete < num_points | j < 100) {
   
@@ -105,6 +103,8 @@ for (i in 1:nrow(params)) {
  , power_exp           = power_exp[i]
  , N                   = N[i]
  , agg_eff_adjust      = agg_eff_adjust[i]
+ , no_tradeoff         = no_tradeoff[i]
+ , nt_mut_var_pos_trait = nt_mut_var_pos_trait[i]
  , tradeoff_only       = tradeoff_only[i]
  , eff_hit             = eff_hit[i]
  , parasite_tuning     = parasite_tuning[i]
@@ -122,8 +122,31 @@ for (i in 1:nrow(params)) {
   
   if (class(res)[1] != "try-error") {
     
-num_complete            <- num_complete + 1
-res_all[[num_complete]] <- res
+num_complete <- num_complete + 1
+res          <- res[[1]]
+
+## Extremely memory intensive to save the whole run so summarize here for now. Can come back and save the
+ ## whole distribution for a different analysis if it is needed
+res <- res %>% 
+  group_by(time) %>% 
+  summarize(
+    total_I        = sum(abundance)
+  , mean_postrait  = weighted.mean(postrait, abundance)
+  , mean_negtrait  = weighted.mean(negtrait, abundance)
+  , sd_postrait    = sum(abundance * (postrait - weighted.mean(postrait, abundance))^2) 
+  , sd_negtrait    = sum(abundance * (negtrait - weighted.mean(negtrait, abundance))^2) 
+  , shannon        = vegan::diversity(abundance, index = "shannon", MARGIN = 1, base = exp(1))
+  ) %>% mutate(
+    param_num    = params[i, ]$param_num
+  , elapsed_time = time_check[3])
+
+res <- left_join(res, params, by = "param_num")
+
+  if (i == 1) {
+res_all <- res
+  } else {
+res_all <- rbind(res_all, res)
+  }
  
   ## Save completed runs with all of the chopped runs in batches of 100 completed runs
 if (((num_complete/100) %% 1) == 0) {
@@ -163,4 +186,4 @@ if (num_complete == num_points) { break }
   , sep = "/"
     )
     , paste(num_complete, format(Sys.time(), "%a_%b_%d_%Y"), sep = "_"), sep = "_"), ".Rds", sep = "")
-  
+  saveRDS(res_all, temp_nam)

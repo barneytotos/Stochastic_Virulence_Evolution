@@ -12,12 +12,6 @@ while (num_complete < num_points | j < 100) {
 batch.rows <- (1000 * (j - 1) + 1):(1000 * (j - 1) + 1000)
 params     <- params.all[batch.rows, ]  
 
-## container for extinctions
-went.extinct <- data.frame(
-  param_num = params$param_num
-, extinct   = 0
-)
-
 ## duplicate these parameter values for each stochastic run 
 num_param <- nrow(params)
 params    <- params[rep(seq_len(nrow(params)), each = num_runs), ]
@@ -27,11 +21,11 @@ params    <- transform(params, run = rep(seq(1, num_runs), num_param))
 params <- transform(params, nt = 0)
 for (i in 1:nrow(params)) {
   if (params$mu[i] <= 0.005) {
-      params$nt[i] <- 7e5
+      params$nt[i] <- 1.62e5
   } else if (params$mu[i] > 0.005 & params$mu[i] <= 0.01) {
-      params$nt[i] <- 4e5
+      params$nt[i] <- 9e4
   } else {
-      params$nt[i] <- 1e5
+      params$nt[i] <- 5e4
   }
 }
 
@@ -125,6 +119,8 @@ for (i in 1:nrow(params)) {
  , power_exp           = power_exp[i]
  , N                   = N[i]
  , agg_eff_adjust      = agg_eff_adjust[i]
+ , no_tradeoff         = no_tradeoff[i]
+ , nt_mut_var_pos_trait = nt_mut_var_pos_trait[i]
  , tradeoff_only       = tradeoff_only[i]
  , eff_hit             = eff_hit[i]
  , parasite_tuning     = parasite_tuning[i]
@@ -148,9 +144,11 @@ res <- left_join(res, params, by = "param_num")
 
 ## Can cleanup later
 if (nrow(res[complete.cases(res), ]) < params[i, ]$nrpt) {
-  res <- res %>% mutate(went_extinct = 1)
+  res          <- res %>% mutate(went_extinct = 1)
+  went.extinct <- TRUE 
 } else {
   res <- res %>% mutate(went_extinct = 0)
+  went.extinct <- FALSE
 }
 
   if (i == 1) {
@@ -159,10 +157,12 @@ res_all <- res
 res_all <- rbind(res_all, res)
   }
 
+if (!went.extinct) {
 num_complete <- num_complete + 1
+}
 
   ## Save completed runs with all of the chopped runs in batches of 100 completed runs
-if (((num_complete/100) %% 1) == 0) {
+if (((num_complete/50) %% 1) == 0) {
   Sys.sleep(1) ## For whatever reason struggles without this, no idea why
   temp_nam <- paste(paste(
     
@@ -201,4 +201,3 @@ if (num_complete == num_points) { break }
     
     , paste(num_complete, format(Sys.time(), "%a_%b_%d_%Y"), sep = "_"), sep = "_"), ".Rds", sep = "")
   saveRDS(res_all, temp_nam)
-
