@@ -2,11 +2,11 @@
 
 * Only test that is missing at this point is stochastic - tuning. 
 	* exists for deterministic - tuning, but unclear if we want tuning tests in the main test file because we may not run the tuning model anyway
-* Deterministic cleaned up a bit (see commit Feb 20), but still have some lingering code to clean
-	* make sure metadata (beta, gamma values, beta/gamma scaling, etc.; maybe even parameter values?) get attached to sim output (attributes, or make an S3 object)
-		* Currently I have the tidying done in run_sim() and parameters returned as a separate list entry. Could consider returning as one object then tidying outside of run_sim(). 
-* Brainstorm what plots we need and what code updates are needed to get us there
-	* Create slurm job array bash script for sending these jobs to Stanford cluster
+* make sure metadata (beta, gamma values, beta/gamma scaling, etc.; maybe even parameter values?) get attached to sim output (attributes, or make an S3 object)
+	* Currently I have the tidying done in run_sim() and parameters returned as a separate list entry. Could consider returning as one object then tidying outside of run_sim(). 
+* Code for all 6 models (stochastic or deterministic for no tradeoff, tradeoff only, and efficiency) running on sherlock
+	* got an error of negative values returned in abundance for one of the ode so need to check that...
+	* when returned check that the sims are returning what we need to plot what we want to talk about in the paper
 
 ## Someone
 
