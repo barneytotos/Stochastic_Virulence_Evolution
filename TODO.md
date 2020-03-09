@@ -4,9 +4,15 @@
 	* deterministic - tuning exists, but it is unclear if we want tests for the tuning model in the main test file because we may not run the tuning model anyway
 * make sure metadata (beta, gamma values, beta/gamma scaling, etc.; maybe even parameter values?) get attached to sim output (attributes, or make an S3 object)
 	* Currently I have tidying done in run_sim() for deterministic and parameters returned as a separate list entry. Could consider returning as one object then tidying outside of run_sim(). 
+* TESTS: what changed in `funs_SIS`? if trivial, modify tests
+
+## Ben
+
+- explore `nt_det` case for parameter sets that do/don't show bimodality in distribution
 
 ## Someone
 
+* make a list of figures that tell the story, then draw them
 * Different levels of detail: what do we need to get ensembles (rather than summaries) back? Or more quantiles? (maybe a "quantiles" argument, i.e. a vector of quantiles of traits to return [marginal, i.e. for each trait: what about 2D summaries?])
 * house of cards mutation model for no-tradeoff case?
 

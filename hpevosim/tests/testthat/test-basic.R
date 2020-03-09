@@ -67,20 +67,27 @@ res_det  <- do.call(run_sim,run_sim_params_determ)
 res_det  <- res_det[["hpevosim_determ.out"]]
 ## FIXME: progress bar? [Put inside ODE? Doesn't seem to be an option in ode()]
 
+## library(ggplot2)
+## ggplot(res_det[["hpevosim_determ.out"]],
+##        aes(time,postrait,z=abundance)) + geom_raster()
+## abund <- with(res_det[[1]],array(abundance,c(41,100,100)))
+## image(abund[,,51])
+
 ## Slightly awkward way to do this. Probably best to export? Idea here was that 
  ## the user-specified starting trait would be slotted into the closest bin for the 
   ## deterministic model, but a bit awkward to rely on the output. Just calc from start, but then have to check
-   ## abs(round(...))
+## abs(round(...))
+
 init_gamma_inf <- res_det %>% 
-  filter(time == 0, abundance > 0) %>% 
+  dplyr::filter(time == 0, abundance > 0) %>% 
   dplyr::select(negtrait) %>%
   unlist()
 
 ## This round() is annoying
 expect_equal(
  (res_det %>% 
-  filter(time == 40, round(negtrait, 7) == round(init_gamma_inf, 7)) %>% 
-  summarize(
+  dplyr::filter(time == 40, round(negtrait, 7) == round(init_gamma_inf, 7)) %>% 
+  dplyr::summarize(
     total_I   = sum(abundance)
   , mean_beta = weighted.mean(beta, abundance)
   ) %>% unlist())
@@ -91,33 +98,38 @@ whichtime <- 80
 whichtimes <- c(40, 200)
 
 ## FIXME: Convert x and y to actual trait values
-ggplot(res_det %>% filter(time == whichtime)
+ggplot(res_det %>% dplyr::filter(time == whichtime)
   , aes(x = postrait_index, y = negtrait_index, z = abundance)) + 
    scale_fill_gradient(low = "white", high = "red4") +
    geom_raster(aes(fill = abundance)) +
   xlab("Transmission Rate (index)") + 
   ylab("Recovery Rate (index)")
 
-ggplot(res_det %>% filter(round(negtrait, 7) == round(init_gamma_inf, 7), (time == whichtimes[1] | time == whichtimes[2]))
-  , aes(beta, abundance, colour = as.factor(time))) + 
-    geom_line() +
-  scale_color_brewer(palette = "Dark2", name = "Time") +
-  xlab("Transmission Rate") + 
-  ylab("Density") 
+(ggplot(res_det
+       %>% dplyr::filter(round(negtrait, 7) == round(init_gamma_inf, 7),
+       (time == whichtimes[1] | time == whichtimes[2]))
+     , aes(beta, abundance, colour = as.factor(time)))
+    + geom_line()
+    + scale_color_brewer(palette = "Dark2", name = "Time")
+    + xlab("Transmission Rate")
+    + ylab("Density")
+)
 
-ggplot(res_det %>% filter(time == whichtime)
+ggplot(res_det %>% dplyr::filter(time == whichtime)
   , aes(postrait, abundance)) + 
     geom_line() +
   xlab("Transmission Rate") + 
   ylab("Density")
   
 ## Plotting sqrt() so that we can see it better
-ggplot(res_det %>% filter(round(negtrait, 7) == round(init_gamma_inf, 7))
+ggplot(res_det %>% dplyr::filter(round(negtrait, 7) == round(init_gamma_inf, 7))
   , aes(x = time, y = postrait_index, z = abundance)) +
    scale_fill_gradient(low = "white", high = "red4") +
-   geom_raster(aes(fill = sqrt(abundance))) +
-  xlab("Time") + 
-  ylab("Transmission Rate (index)")
+    geom_raster(aes(fill = sqrt(abundance))) +
+    scale_x_continuous(expand=c(0,0)) +
+    scale_y_continuous(expand=c(0,0)) +
+    xlab("Time") + 
+    ylab("Transmission Rate (index)")
 
 library(rgl)
 
@@ -132,8 +144,8 @@ with(res_det %>% filter(round(negtrait, 7) == round(init_gamma_inf, 7)) %>% drop
 ## evolve only in gamma, beta gets pulled along according to the tradeoff curve
 run_sim_params_determ <- transform(run_sim_params_determ,
                                     power_c =    2,
-                                    no_tradeoff = F, 
-                                    tradeoff_only = T
+                                    no_tradeoff = FALSE, 
+                                    tradeoff_only = TRUE
   )
 
 res_det  <- do.call(run_sim,run_sim_params_determ)
