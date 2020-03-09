@@ -1,10 +1,7 @@
 ## Morgan
 
-* Only test that is missing at this point is stochastic - tuning. 
-	* deterministic - tuning exists, but it is unclear if we want tests for the tuning model in the main test file because we may not run the tuning model anyway
 * make sure metadata (beta, gamma values, beta/gamma scaling, etc.; maybe even parameter values?) get attached to sim output (attributes, or make an S3 object)
 	* Currently I have tidying done in run_sim() for deterministic and parameters returned as a separate list entry. Could consider returning as one object then tidying outside of run_sim(). 
-* TESTS: what changed in `funs_SIS`? if trivial, modify tests
 
 ## Ben
 
