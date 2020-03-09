@@ -489,29 +489,29 @@ dimnames(x.m) <- list(
 , t
 )
 
-x.l        <- melt(x.m)  
+x.l        <- reshape2::melt(x.m)  
 names(x.l) <- c("negtrait", "postrait", "time", "abundance") 
 
 ## Add in index for creating geom_raster
-x.l <- mutate(x.l
+x.l <- transform(x.l
   , negtrait_index = as.numeric(as.factor(negtrait))
   , postrait_index = as.numeric(as.factor(postrait))
   )
 
 ## Calculate gamma and beta from the two evolving traits depending on the model
 if (!no_tradeoff) {
-if (parasite_tuning) {
-  x.l <- mutate(x.l, effic = eff_calc(negtrait, postrait, eff_scale)) %>%
-    mutate(beta = effic * power_tradeoff(alpha = negtrait, c = power_c, curv = power_exp))
+    if (parasite_tuning) {
+        x.l <- transform(x.l, effic = eff_calc(negtrait, postrait, eff_scale))
+        x.l <- transform(xl, beta = effic * power_tradeoff(alpha = negtrait, c = power_c, curv = power_exp))
+    } else {
+        if (!tradeoff_only) {
+            x.l <- transform(x.l, beta = postrait * power_tradeoff(alpha = negtrait, c = power_c, curv = power_exp)) 
+        } else {
+            x.l <- transform(x.l, beta = power_tradeoff(alpha = negtrait, c = power_c, curv = power_exp))
+        }
+    }
 } else {
-  if (!tradeoff_only) {
-  x.l <- mutate(x.l, beta = postrait * power_tradeoff(alpha = negtrait, c = power_c, curv = power_exp)) 
-  } else {
-  x.l <- mutate(x.l, beta = power_tradeoff(alpha = negtrait, c = power_c, curv = power_exp))
-  }
-} 
-} else {
-  x.l <- mutate(x.l, beta = postrait) 
+    x.l <- transform(x.l, beta = postrait) 
 }
 
 return(x.l)
@@ -919,16 +919,19 @@ run_sim <- function(
         lpos_upr   <- lpos_q[3]     
         
         avg_neg    <- mean(state$neg_trait)
-        sd_neg     <- sd(state$neg_trait)     
-      
+        sd_neg     <- sd(state$neg_trait) 
+
+        ## inverse-link transform
         avg_pos    <- mut_link_p$linkinv(lpos_mean)
-        sd_pos     <- mut_link_p$linkinv(lpos_sd)    
-        
+        sd_pos     <- lpos_sd*mut_link_p$mu.eta(lpos_mean)
+
+        ## derived beta value
         avg_beta   <- mean(state$pos_trait)
         sd_beta    <- sd(state$pos_trait)
         
         shann      <- vegan::diversity(state$Imat, index = "shannon", MARGIN = 1, base = exp(1))
 
+        ## FIXME: could use progress bar machinery from plyr ... 
         if (progress == "bar") {
           cat(".")
         } else if (progress == "text") {
