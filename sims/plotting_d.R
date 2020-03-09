@@ -3,9 +3,10 @@
 #################################################
 
 ### load previous results
-res_all  <- readRDS("batch_runs/to_TRUE_100_Fri_Mar_06_2020.Rds")
+res_all  <- readRDS("batch_runs/nt_TRUE_400_Sun_Mar_08_2020.Rds")
 
-endsteps <- 50
+endsteps     <- 50
+model.choice <- "nt"
 
 ### Can first explore just single runs to check to see if the model is working. What to check will vary by the model chosen
 gg_check <- ggplot((res_all %>% filter(param_num <= 12, time < 300))
@@ -71,6 +72,8 @@ res_all_s.a <- res_all_s.a %>%
   summarize(
     mean_postrait       = mean(mean_postrait)
   , sd_postrait         = mean(sd_postrait)
+  , mean_negtrait       = mean(mean_negtrait)
+  , sd_negtrait         = mean(sd_negtrait)
   , shannon.div         = mean(shannon)
   , mu                  = mean(mu)
   , mut_mean            = mean(mut_mean)
@@ -79,8 +82,43 @@ res_all_s.a <- res_all_s.a %>%
   , gamma0              = mean(gamma0)
     )
 
-res_all_s.a.res <- res_all_s.a %>% dplyr::select(param_num, mean_postrait, sd_postrait, shannon.div)  
-res_all_s.a.par <- res_all_s.a %>% dplyr::select(param_num, mu, mut_mean, mut_sd, N, gamma0)
+res_all_s.a.res <- res_all_s.a %>% dplyr::select(
+  param_num
+, mean_postrait
+, sd_postrait
+, mean_negtrait
+, sd_negtrait
+, shannon.div
+  )  
+
+if (model.choice != "nt") {
+
+res_all_s.a.par <- res_all_s.a %>% dplyr::select(
+  param_num
+, mu
+, mut_mean
+, mut_sd
+, N
+, gamma0
+  )
+
+} else {
+  
+res_all_s.a <- left_join(res_all_s.a
+  , (res_all %>% dplyr::select(param_num, nt_mut_var_pos_trait) %>% filter(!duplicated(param_num)))
+  , by = "param_num")
+  
+res_all_s.a.par <- res_all_s.a %>% dplyr::select(
+  param_num
+, mu
+, mut_mean
+, mut_sd
+, N
+, gamma0
+, nt_mut_var_pos_trait
+  )  
+  
+}
 
 ## Melt
 res_all_s.a.res.gg <- melt(res_all_s.a.res, c("param_num"))
@@ -101,8 +139,42 @@ param.f_col       <- param.f_col[!duplicated(param.f_col), ]
 res_all_s.gg <- left_join(res_all_s.gg, param.f_col, "param_num")
 
 ## Plot the hypercube results
+if (model.choice != "nt") {
+
+## Plot the hypercube results
 ggplot(res_all_s.gg, aes(Param.Value, Out.Value)) +
     geom_point(aes(colour = mu)) +
     facet_grid(Out.Name ~ Param.Name, scale = "free") +
     scale_color_viridis() +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 14))
+    theme(
+      axis.text.x = element_text(angle = 90, hjust = 1, size = 14)
+      )
+
+} else {
+  
+## probably could do this all in one dplyr call but w/e
+pos_only <- res_all_s.a.par[with(res_all_s.a.par, which(nt_mut_var_pos_trait == TRUE)), ]$param_num
+neg_only <- res_all_s.a.par[with(res_all_s.a.par, which(nt_mut_var_pos_trait == FALSE)), ]$param_num
+  
+ggplot(
+  (res_all_s.gg %>% filter(param_num %in% pos_only))
+  , aes(Param.Value, Out.Value)) +
+    geom_point(aes(colour = mu)) +
+    facet_grid(Out.Name ~ Param.Name, scale = "free") +
+    scale_color_viridis() +
+    theme(
+      axis.text.x = element_text(angle = 90, hjust = 1, size = 14)
+      )
+  
+ggplot(
+  (res_all_s.gg %>% filter(param_num %in% neg_only))
+  , aes(Param.Value, Out.Value)) +
+    geom_point(aes(colour = mu)) +
+    facet_grid(Out.Name ~ Param.Name, scale = "free") +
+    scale_color_viridis() +
+    theme(
+      axis.text.x = element_text(angle = 90, hjust = 1, size = 14)
+      )
+  
+}
+
