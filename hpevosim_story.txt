@@ -1,0 +1,59 @@
+Abstract 
+--------
+
+Many recent mathematical models of parasite evolution use a deterministic framework, where stochasticity's only role is to provide raw material for adaptation via mutation. The majority of these models also assume, a priori, that a parasite is constrained by a virulence-transmission tradeoff that follows a specific functional form. When taken together, these choices result in models that are poorly equipped for addressing other constraints that may be acting on parasite evolution, such as small population sizes or biased mutations, and are not suited for modeling the emergence of a parasite in a new host population when it is initially beneath its tradeoff frontier. These models find, almost ubiquitously, that parasites evolve to a single intermediate optimum virulence, failing to describe the broad range of virulence and the large number of low-virulence parasites found in natural communities. 
+
+In an attempt to consider the diversity of parasite virulence from a broad perspective, we explore a range of stochastic, discrete-population models that incorporate mutation, drift, and selection; each distinct parasite strain differs in transmission, host clearance rate/virulence, or both. Specifically, we analyze the evolutionary behavior of parasites in three models of stochastic-parasite evolution: 1) evolution in transmission and host clearance rate in the absence of a virulence-transmission tradeoff; 2) evolution when parasite transmission is defined entirely by a recovery rate/transmission tradeoff; 3) evolution when parasite transmission is constrained by recovery rate, but where parasites can evolve compensatory mechanisms to stay near the tradeoff frontier (increase transmission efficiency). In each case we compare the results of stochastic evolution to deterministic evolution and highlight cases where outcomes diverge. 
+
+Key Results (in brief)
+--------
+
+1) In the absence of a virulence-transmission tradeoff, we find as expected that parasites are strongly selected for increased transmission and decreased virulence, limited only by the effects of mutation and drift; smaller host populations have lower-transmission/lower-virulence parasites. However, we observe a bimodal distribution of outcomes depending on the mean and standard deviation of the mutational spectrum, which indicates that parasites may fail to evolve higher transmission rates in finite populations in finite time.
+	
+2) For a parasite defined entirely by a transmission/virulence tradeoff curve, we find...
+
+3) For a parasite evolving from beneath its tradeoff frontier, we find that parasites often evolve higher than optimal virulence in the short term, overshooting their long-term optimum. This arises in both the stochastic and deterministic models... 
+
+
+Figures 
+--------
+
+1) Conceptual figure describing the three models
+
+I could imagine sorting results figures by model or by dynamics vs parameter exploration. One way to do this could be to have three main figures, one for each model, the primary panel of which are results of runs over a large parameter set that highlight a key finding for each model (1: bifurcation; 2: importance of parameter x and y when evolving with just a tradeoff; 3: transient higher/lower virulence). Secondary panels pointing to a few of the parameter combinations could show the full dynamics of those few data points?. 
+
+This way the paper unfolds highlighting some key finding of the other models, which links back to how the abstract/intro is written about deterministic vs stochastic etc.
+
+E.g. first set could be hypercube sample plots with inserts:
+
+2A)   bifurcation in parameter values (similar to the plots in your original html and what I have been recreating)
+2B,C) stochastic and deterministic dynamics from one of the parameter sets
+
+3A)    Similar, but highlighting a key difference or finding of the tradeoff only curve?
+3B, C) ... 
+
+3A)    Again, similar, but highlighting transient dynamics? (possibly hard for the hypercube samples but some sort of sliding window instead of just the end 1/5 to summarize?)
+3B, C) ... 
+
+
+Set up in this way though I am not sure about where we compare qualitative patterns between deterministic and stochastic across parameter values. (maybe supp)
+
+
+Next set could then be about whatever the above don't address:
+
+4) Diversity of strains as a function N, mut_mean, mut_sd etc. across the three models
+	-- Which models lead to high diversity, low diversity?
+5) Time (in generations?) to optimum, movement from the optimum
+
+
+Other things we would maybe want to show but we may already be running out of figures 
+
+1) Role of stochasticity: plot of many runs at one parameter set
+2) Probability of extinction: at many parameter values (especially in the efficiency model) a parasite can't emerge and goes extinct
+3) Key places where the deterministic diverges from the stochastic (if we find that it/they do/does
+
+
+Do we need to track other pieces to get to these plots?
+
+I think what is returned by the 25 column object returned from run_sim captures all of this already
+
