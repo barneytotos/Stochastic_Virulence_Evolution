@@ -61,6 +61,9 @@ E.g. first set could be hypercube sample plots with inserts:
 
 Set up in this way though I am not sure about where we compare qualitative patterns between deterministic and stochastic across parameter values. (maybe supp)
 
+BMB: my main thought here is that I'm not sure we need to show that many of the hypercube plots.  I think the hypercube plots are largely for us understanding what's going on.  I think the first set of plots (showing threshold) is one plot showing time evolution (i.e. a surface or contour) and one plot showing bimodality at some snapshot time.
+
+For transient dynamics, I think something like the plots in your thesis chapter would be OK.  We could use hypercube data to compute something like "fraction overshoot" and show how this varies over interesting/sensitive parts of the parameter space
 
 Next set could then be about whatever the above don't address:
 
@@ -72,11 +75,14 @@ Next set could then be about whatever the above don't address:
 Other things we would maybe want to show but we may already be running out of figures 
 
 1) Role of stochasticity: plot of many runs at one parameter set
+
+BMB: Maybe unnecessary?
+  
 2) Probability of extinction: at many parameter values (especially in the efficiency model) a parasite can't emerge and goes extinct
 3) Key places where the deterministic diverges from the stochastic (if we find that it/they do/does
-
 
 Do we need to track other pieces to get to these plots?
 
 I think what is returned by the 25 column object returned from run_sim captures all of this already
 
+BMB: OK.  Will try to start to draw some plots ...
