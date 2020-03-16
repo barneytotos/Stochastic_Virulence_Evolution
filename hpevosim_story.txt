@@ -1,19 +1,42 @@
 Abstract 
 --------
 
-Many recent mathematical models of parasite evolution use a deterministic framework, where stochasticity's only role is to provide raw material for adaptation via mutation. The majority of these models also assume, a priori, that a parasite is constrained by a virulence-transmission tradeoff that follows a specific functional form. When taken together, these choices result in models that are poorly equipped for addressing other constraints that may be acting on parasite evolution, such as small population sizes or biased mutations, and are not suited for modeling the emergence of a parasite in a new host population when it is initially beneath its tradeoff frontier. These models find, almost ubiquitously, that parasites evolve to a single intermediate optimum virulence, failing to describe the broad range of virulence and the large number of low-virulence parasites found in natural communities. 
+Many recent mathematical models of parasite evolution use a deterministic framework, where stochasticity's only role is to provide raw material for adaptation via mutation.
 
-In an attempt to consider the diversity of parasite virulence from a broad perspective, we explore a range of stochastic, discrete-population models that incorporate mutation, drift, and selection; each distinct parasite strain differs in transmission, host clearance rate/virulence, or both. Specifically, we analyze the evolutionary behavior of parasites in three models of stochastic-parasite evolution: 1) evolution in transmission and host clearance rate in the absence of a virulence-transmission tradeoff; 2) evolution when parasite transmission is defined entirely by a recovery rate/transmission tradeoff; 3) evolution when parasite transmission is constrained by recovery rate, but where parasites can evolve compensatory mechanisms to stay near the tradeoff frontier (increase transmission efficiency). In each case we compare the results of stochastic evolution to deterministic evolution and highlight cases where outcomes diverge. 
+BMB: I was going to quibble with this as not being the right focus, but I think the next sentence takes care of that.
+
+The majority of these models also assume, a priori, that a parasite is constrained by a virulence-transmission tradeoff that follows a specific functional form.
+
+Good.
+
+When taken together, these choices result in models that are poorly equipped for addressing other constraints that may be acting on parasite evolution, such as small population sizes or biased mutations, and are not suited for modeling the emergence of a parasite in a new host population when it is initially beneath its tradeoff frontier.
+
+BMB: I might weaken this slightly ("doesn't encompass [fails to capture?] the full generality ...") Proulx and Day's Price-equation paper does handle a pretty wide range of cases - biased mutation, within-host competition. (On the other hand it doesn't handle changes in genetic variance, or small population size.)  [In general, you have to walk a very fine line with "everyone else is missing X,Y,Z; we're doing A, B, C ..."]
+
+These models find, almost ubiquitously, that parasites evolve to a single intermediate optimum virulence, failing to describe the broad range of virulence and the large number of low-virulence parasites found in natural communities. 
+
+BMB: I like this but maybe more nuance.  Maybe mention something about a community-level focus (can argue about what we're doing is "community", but kind of ...)
+
+In an attempt
+
+BMB: delete? or "in order to"? ("In an attempt" feels tentative)
+
+to consider the diversity of parasite virulence from a broad perspective, we explore a range of stochastic, discrete-population models that incorporate mutation, drift, and selection where a continuous range of parasite strains differ in transmission, host clearance rate (equivalent to virulence), or both. Specifically, we analyze the evolutionary behavior of parasites in three stochastic models of parasite evolution: 1) evolution in transmission and host clearance rate in the absence of a virulence-transmission tradeoff; 2) evolution when parasite transmission is defined entirely by a recovery rate/transmission tradeoff; 3) evolution when parasite transmission is constrained by recovery rate, but where parasites can evolve compensatory mechanisms to stay near the tradeoff frontier (increase transmission efficiency). In each case we compare the results of stochastic evolution to deterministic evolution and highlight cases where outcomes diverge. 
 
 Key Results (in brief)
 --------
 
-1) In the absence of a virulence-transmission tradeoff, we find as expected that parasites are strongly selected for increased transmission and decreased virulence, limited only by the effects of mutation and drift; smaller host populations have lower-transmission/lower-virulence parasites. However, we observe a bimodal distribution of outcomes depending on the mean and standard deviation of the mutational spectrum, which indicates that parasites may fail to evolve higher transmission rates in finite populations in finite time.
+1) In the absence of a virulence-transmission tradeoff, we find as expected that parasites are strongly selected for increased transmission and decreased virulence, limited only by the effects of mutation and drift; smaller host populations have lower-transmission/lower-virulence parasites. However,
+
+we observe a bimodal distribution of outcomes depending on the mean and standard deviation of the mutational spectrum, which indicates that parasites may fail to evolve higher transmission rates in finite populations in finite time.
+
+BMB: depending on the mutational parameters, a threshold may exist below which the parasite experiences error catastrophes or mutational meltdown; such thresholds can give rise to long delays in runaway evolution and bimodal distributions of strains on either side of the threshold.
 	
 2) For a parasite defined entirely by a transmission/virulence tradeoff curve, we find...
 
 3) For a parasite evolving from beneath its tradeoff frontier, we find that parasites often evolve higher than optimal virulence in the short term, overshooting their long-term optimum. This arises in both the stochastic and deterministic models... 
 
+[BMB: this transient evolution phenomenon is already attested in Proulx and Day and Bolker et al. We could point out that evaluating it in a stochastic, finite-size population is a further step in assessing its importance in real-world systems.]
 
 Figures 
 --------
